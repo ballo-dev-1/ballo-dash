@@ -31,7 +31,7 @@ const Login = () => {
 
     if (res?.ok) {
       toast.success("Login successful!", { id: toastId });
-      router.push("/dashboard");
+      router.push("/");
     } else {
       toast.error("Invalid username or password", { id: toastId });
     }
