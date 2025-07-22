@@ -1,0 +1,25 @@
+.data-tables-container {
+  .row > div {
+    transition: all 0.15s ease-in-out;
+  }
+
+  .expand-btn {
+    background: none;
+    border: 0;
+    outline: none;
+  }
+}
+
+// .post-table {
+//   table {
+//     table-layout: fixed !important;
+//     tbody {
+//       td {
+//         white-space: nowrap;
+//         overflow: hidden;
+//         text-overflow: ellipsis;
+//         // min-width: 15rem I !important;
+//       }
+//     }
+//   }
+// }
