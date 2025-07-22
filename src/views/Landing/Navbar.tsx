@@ -82,7 +82,7 @@ const NavBar = () => {
 
               <Nav.Item as="li" className="px-1">
                 <Nav.Link
-                  href="https://light-able-react-components.vercel.app/"
+                  href="#"
                   style={{ color: "white" }}
                 >
                   About Us
@@ -91,7 +91,7 @@ const NavBar = () => {
 
               <Nav.Item as="li" className="px-1">
                 <Nav.Link
-                  href="https://pcoded.gitbook.io/light-able/"
+                  href="#"
                   target="_blank"
                   style={{ color: "white" }}
                 >
@@ -101,7 +101,7 @@ const NavBar = () => {
 
               <Nav.Item as="li" className="px-1">
                 <Nav.Link
-                  href="https://pcoded.gitbook.io/light-able/"
+                  href="/login"
                   target="_blank"
                   className="active-link"
                   style={{ color: "white" }}
