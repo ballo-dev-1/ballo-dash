@@ -4,34 +4,34 @@ import { signIn } from "next-auth/react";
 import NavBar from "@views/Landing/Navbar";
 import React, { useState } from "react";
 import "@assets/scss/login.scss";
-import { Lock, UserRound } from "lucide-react";
+import { Lock, UserRound, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
-  const [Loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl") || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
     setLoading(true);
-
     const toastId = toast.loading("Logging in...");
 
     const res = await signIn("credentials", {
       username,
       password,
-      redirect: false, // use manual redirect
+      redirect: false,
+      callbackUrl,
     });
 
     if (res?.ok) {
       toast.success("Login successful!", { id: toastId });
-      router.push("/");
+      router.push(callbackUrl);
     } else {
       toast.error("Invalid username or password", { id: toastId });
     }
@@ -87,9 +87,7 @@ const Login = () => {
                     className="eye-button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     style={{ background: "none", border: "none" }}
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
                       <EyeOff size={20} color="white" />
@@ -110,8 +108,8 @@ const Login = () => {
               </div>
               <button
                 type="submit"
-                disabled={Loading}
-                style={Loading ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                disabled={loading}
+                style={loading ? { opacity: 0.5, cursor: "not-allowed" } : {}}
                 className="login-button"
               >
                 Sign in
