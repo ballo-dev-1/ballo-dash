@@ -35,6 +35,8 @@ import marketingPlansReducer from "./Marketing Plans/reducer";
 
 import metaReducer from "./metaData/reducer";
 
+import linkedInReducer from "./linkedInData/reducer";
+
 // Combine your reducers into a root reducer
 const rootReducer = combineReducers({
   Calender: calenderReducer,
@@ -47,6 +49,7 @@ const rootReducer = combineReducers({
   marketingPlans: marketingPlansReducer,
   integration: integrationReducer,
   meta: metaReducer,
+  linkedin: linkedInReducer,
 });
 
 const reducer = (state: any, action: AnyAction) => {

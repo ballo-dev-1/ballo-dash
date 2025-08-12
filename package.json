@@ -67,6 +67,7 @@
     "framer-motion": "^12.15.0",
     "i18next": "^24.1.2",
     "i18next-browser-languagedetector": "^8.0.0",
+    "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",
     "moment": "^2.30.1",

@@ -29,7 +29,6 @@ type AppPropsWithLayout = AppProps & {
   pageProps: any;
 };
 
-<AppInitializer />;
 const MyApp = ({
   Component,
   pageProps: { session, ...pageProps },

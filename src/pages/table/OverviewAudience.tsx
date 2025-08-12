@@ -2,9 +2,21 @@ import { useEffect, useState } from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { 
+  selectProgressiveMetaStats, 
+  selectProgressiveMetaStatus,
+  selectProgressiveMetaError 
+} from "@/toolkit/metaData/reducer";
+import { 
+  selectProgressiveLinkedInStats, 
+  selectProgressiveLinkedInStatus,
+  selectProgressiveLinkedInError 
+} from "@/toolkit/linkedInData/reducer";
 
 interface OverviewAudienceProps {
   meta: any; // Replace `any` with a proper type if you know the shape of `meta`
+  linkedInData?: any; // Add LinkedIn data prop
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -63,22 +75,144 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
   };
 };
 
+// New function to transform progressive Facebook data
+const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
+  if (!progressiveData) return null;
+
+  const { pageInfo, metrics, loadingMetrics } = progressiveData;
+
+  const pageName = pageInfo?.name ?? "-";
+
+  // Helper function to get metric value with loading state
+  const getMetricValue = (metricName: string, period: string, defaultValue: any = "-") => {
+    if (loadingMetrics?.includes(metricName)) {
+      return "Loading...";
+    }
+    
+    const metricData = metrics[metricName];
+    if (!metricData || !metricData[period]) {
+      return defaultValue;
+    }
+    
+    const values = metricData[period].values;
+    return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
+  };
+
+  // Get page_fans_city data
+  const pageFansCity = getMetricValue("page_fans_city", "day");
+
+  if (
+    pageFansCity === "Loading..." ||
+    pageFansCity === "-" ||
+    typeof pageFansCity !== "object" ||
+    pageFansCity === null
+  ) {
+    return {
+      platform: progressiveData.platform || "Facebook",
+      pageName,
+      pageFollowersCity: pageFansCity,
+      pageFollowersCountry: "-",
+      pageLikesValue: "-",
+    };
+  }
+
+  const pageFansCityData = pageFansCity as Record<string, number>;
+
+  const maxEntry = Object.entries(pageFansCityData).reduce((max, entry) =>
+    entry[1] > max[1] ? entry : max
+  );
+
+  const [location, value] = maxEntry;
+  const [city, country] = location.split(", ").slice(-2);
+
+  return {
+    platform: progressiveData.platform || "Facebook",
+    pageName,
+    pageFollowersCity: city,
+    pageFollowersCountry: country,
+    pageLikesValue: value,
+  };
+};
+
+// New function to transform progressive LinkedIn data
+const transformProgressiveLinkedInData = (progressiveData: any): PlatformOverview | null => {
+  if (!progressiveData) return null;
+
+  const { organizationName, followers, loadingMetrics } = progressiveData;
+
+  const pageName = organizationName || "Company Page";
+
+  // Helper function to get metric value with loading state
+  const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+    if (loadingMetrics?.includes(metricName)) {
+      return "Loading...";
+    }
+    
+    switch (metricName) {
+      case "followers":
+        return followers || defaultValue;
+      default:
+        return defaultValue;
+    }
+  };
+
+  // For LinkedIn audience data, we'll show the followers count and location info
+  // LinkedIn doesn't provide city/country breakdown in the same way as Facebook
+  return {
+    platform: "LinkedIn",
+    pageName,
+    pageFollowersCity: "Global", // LinkedIn doesn't provide city breakdown
+    pageFollowersCountry: "Global", // LinkedIn doesn't provide country breakdown
+    pageLikesValue: getMetricValue("followers"),
+  };
+};
+
 const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   meta,
+  linkedInData,
   isExpanded,
   onToggleExpand,
 }) => {
+  // Get progressive data from Redux
+  const progressiveMetaData = useSelector(selectProgressiveMetaStats);
+  const progressiveMetaStatus = useSelector(selectProgressiveMetaStatus);
+  const progressiveMetaError = useSelector(selectProgressiveMetaError);
+  
+  const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
+  const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
+  const progressiveLinkedInError = useSelector(selectProgressiveLinkedInError);
+
   const [reachHeader, setReachHeader] = useState("Reach (week)");
   const [engagementHeader, setEngagementHeader] =
     useState("Engagement (month)");
   const [CTAClicksHeader, setCTAClicksHeader] = useState("CTA Clicks (month)");
   const facebookData: PlatformOverview[] = [];
+  const linkedinDataArray: PlatformOverview[] = [];
 
-  const transformed = transformMetaData(meta);
-  if (transformed) {
-    facebookData.push(transformed);
+  // Use progressive Facebook data if available, otherwise fall back to regular meta data
+  const transformedFacebook = progressiveMetaData 
+    ? transformProgressiveMetaData(progressiveMetaData)
+    : transformMetaData(meta);
+    
+  if (transformedFacebook) {
+    facebookData.push(transformedFacebook);
   }
-  const linkedinData: { linkedinData: any }[] = [];
+
+  // Use progressive LinkedIn data if available, otherwise fall back to regular LinkedIn data
+  const transformedLinkedIn = progressiveLinkedInData 
+    ? transformProgressiveLinkedInData(progressiveLinkedInData)
+    : linkedInData ? {
+        platform: "LinkedIn",
+        pageName: linkedInData.organizationName || "Company Page",
+        pageFollowersCity: "Global",
+        pageFollowersCountry: "Global", 
+        pageLikesValue: linkedInData.followers ? linkedInData.followers.toLocaleString() : "-"
+      } : null;
+
+  if (transformedLinkedIn) {
+    linkedinDataArray.push(transformedLinkedIn);
+  }
+
   const instagramData: { instagramData: any }[] = [];
   const xData: { xData: any }[] = [];
   const tiktokData: { tiktokData: any }[] = [];
@@ -88,7 +222,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
 
   const data = [
     ...facebookData,
-    ...linkedinData,
+    ...linkedinDataArray,
     ...instagramData,
     ...xData,
     ...tiktokData,
@@ -129,6 +263,10 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
     },
   ];
 
+  // Determine loading state
+  const isLoading = progressiveMetaStatus === "loading" || progressiveLinkedInStatus === "loading" || 
+                   (!progressiveMetaData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+
   return (
     <Row>
       <Col xl={12}>
@@ -138,7 +276,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
               <h5>{title}</h5>
 
               <button onClick={onToggleExpand} className="expand-btn">
-                {isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                {isExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
               </button>
             </div>
           </Card.Header>
@@ -151,7 +289,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
                 isBordered={false}
                 customPageSize={5}
                 isPagination={true}
-                loading={true}
+                loading={isLoading}
               />
             </div>
           </Card.Body>

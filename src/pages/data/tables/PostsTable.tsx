@@ -106,7 +106,7 @@ const PostsTable: React.FC<Props> = ({
   platform,
   data,
 }) => {
-  console.log(data);
+  // console.log(data);
 
   const transformedData = Array.isArray(data?.posts)
     ? transformData(data?.posts)

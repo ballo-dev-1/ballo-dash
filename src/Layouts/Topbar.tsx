@@ -127,7 +127,7 @@ const TopBar = ({
 
           <div className="ms-auto">
             <ul className="list-unstyled">
-              <Dropdown
+              {/* <Dropdown
                 as="li"
                 className="dropdown pc-h-item d-none d-md-inline-flex"
               >
@@ -184,8 +184,8 @@ const TopBar = ({
                     </div>
                   </div>
                 </Dropdown.Menu>
-              </Dropdown>
-              <Dropdown as="li" className="pc-h-item d-none d-md-inline-flex">
+              </Dropdown> */}
+              {/* <Dropdown as="li" className="pc-h-item d-none d-md-inline-flex">
                 <Dropdown.Toggle
                   as="a"
                   className="pc-head-link arrow-none me-0"
@@ -217,9 +217,9 @@ const TopBar = ({
                     <span>Default</span>
                   </Dropdown.Item>
                 </Dropdown.Menu>
-              </Dropdown>
+              </Dropdown> */}
 
-              <Dropdown as="li" className="pc-h-item d-none d-md-inline-flex">
+              {/* <Dropdown as="li" className="pc-h-item d-none d-md-inline-flex">
                 <Dropdown.Toggle
                   as="a"
                   className="pc-head-link head-link-primary dropdown-toggle arrow-none me-0"
@@ -249,9 +249,9 @@ const TopBar = ({
                     </Dropdown.Item>
                   ))}
                 </Dropdown.Menu>
-              </Dropdown>
+              </Dropdown> */}
 
-              <li className="pc-h-item">
+              {/* <li className="pc-h-item">
                 <a
                   className="pc-head-link pct-c-btn"
                   onClick={handleOffcanvasToggle}
@@ -261,8 +261,8 @@ const TopBar = ({
                 >
                   <i className="ph-duotone ph-gear-six"></i>
                 </a>
-              </li>
-              <Dropdown as="li" className="pc-h-item">
+              </li> */}
+              {/* <Dropdown as="li" className="pc-h-item">
                 <Dropdown.Toggle
                   as="a"
                   className="pc-head-link arrow-none me-0"
@@ -296,7 +296,7 @@ const TopBar = ({
                     <span>Logout</span>
                   </Dropdown.Item>
                 </Dropdown.Menu>
-              </Dropdown>
+              </Dropdown> */}
               <Dropdown as="li" className="pc-h-item">
                 <Dropdown.Toggle
                   as="a"
@@ -749,16 +749,26 @@ const TopBar = ({
                             </span>
                           </Dropdown.Item> */}
                           <Dropdown.Item>
-                            <span className="d-flex align-items-center">
+                            <span className="d-flex align-items-center ">
                               <i className="ph-duotone ph-bell"></i>
                               <span>Notifications</span>
                             </span>
                           </Dropdown.Item>
-                          <Dropdown.Item>
-                            <span className="d-flex align-items-center">
+                          <Dropdown.Item style={{ paddingBlock: 0 }}>
+                            {/* <span className="d-flex align-items-center">
                               <i className="ph-duotone ph-gear-six"></i>
                               <span>Settings</span>
-                            </span>
+                            </span> */}
+                              <button
+                                className="pc-head-link pct-c-btn ph-gear-six d-flex justify-content-start border-0"
+                                style={{ padding: 0, margin: 0, width: '100%' }}
+                                onClick={handleOffcanvasToggle}
+                                data-bs-toggle="offcanvas"
+                                data-bs-target="#offcanvas_pc_layout"
+                              >
+                                <i className="ph-duotone ph-gear-six"></i>
+                                <span>Settings</span>
+                              </button>
                           </Dropdown.Item>
                         </li>
                         <li className="list-group-item">

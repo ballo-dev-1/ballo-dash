@@ -7,7 +7,11 @@ import { eq, and } from "drizzle-orm";
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
-) {
+  ) {
+    console.log("=== Integrations API called ===");
+    // console.log("Method:", req.method);
+    // console.log("Query:", req.query);
+  
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -15,8 +19,12 @@ export default async function handler(
   const { companyId, platform } = req.query;
 
   if (!companyId || typeof companyId !== "string") {
+    // console.log("Missing or invalid companyId:", companyId);
     return res.status(400).json({ error: "Missing or invalid companyId" });
   }
+
+  // console.log("CompanyId:", companyId);
+  // console.log("Platform:", platform);
 
   try {
     const whereClause =
@@ -27,11 +35,14 @@ export default async function handler(
           )
         : eq(integrations.companyId, companyId);
 
+    // console.log("Where clause:", whereClause);
+
     const integrationData = await db
       .select()
       .from(integrations)
       .where(whereClause);
 
+    // console.log("Integration data found:", integrationData);
     return res.status(200).json(integrationData);
   } catch (error) {
     console.error("[GET_INTEGRATIONS]", error);

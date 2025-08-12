@@ -2,15 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import OverviewAccounts from "./tables/OverviewAccounts";
 import OverviewAudience from "./tables/OverviewAudience";
-import { useSelector } from "react-redux";
 import { selectMetaStats } from "@/toolkit/metaData/reducer";
-
+import { useSelector } from "react-redux";
+import { selectLinkedInStats } from "@/toolkit/linkedInData/reducer";
+  
 const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
-
-  useEffect(() => {
-    console.log("metastats:", metaStats);
-  }, [metaStats]);
+  const linkedInStats = useSelector(selectLinkedInStats) || {};
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
@@ -33,6 +31,7 @@ const Overview = () => {
         <Col md={expandedCols[tableKey1] ? 12 : 6}>
           <OverviewAccounts
             meta={metaStats}
+            linkedInData={linkedInStats}
             isExpanded={!!expandedCols[tableKey1]}
             onToggleExpand={() => toggleExpand(tableKey1)}
           />
@@ -40,6 +39,7 @@ const Overview = () => {
         <Col md={expandedCols[tableKey2] ? 12 : 6}>
           <OverviewAudience
             meta={metaStats}
+            linkedInData={linkedInStats}
             isExpanded={!!expandedCols[tableKey2]}
             onToggleExpand={() => toggleExpand(tableKey2)}
           />
