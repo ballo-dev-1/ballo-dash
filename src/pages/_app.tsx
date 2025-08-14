@@ -9,16 +9,12 @@ import { SessionProvider } from "next-auth/react";
 import { AppProps } from "next/app";
 import type { NextPage } from "next";
 import { appWithTranslation } from "next-i18next";
-import { CompanyProvider } from "@/app/contexts/CompanyContext";
+import { AppProvider } from "@/contexts/AppContext";
 import { Toaster } from "react-hot-toast";
-import { UserProvider } from "@/app/contexts/UserContext";
 import { useRouter } from "next/router";
 import Loading from "./pages/loading";
-import { useAppDispatch } from "@/toolkit/hooks";
-import { fetchMetaPosts, fetchMetaStats } from "@/toolkit/metaData/reducer";
-import { fetchCompany } from "@/toolkit/Company/reducer";
-import { useSelector } from "react-redux";
 import AppInitializer from "@/Common/AppInitializer";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -66,14 +62,14 @@ const MyApp = ({
       </Head>
       <SessionProvider session={session}>
         <ReduxProvider store={store}>
-          <CompanyProvider>
-            <UserProvider>
+          <ErrorBoundary>
+            <AppProvider>
               <Toaster position="top-center" />
               {loading && <Loading />}
               <AppInitializer />
               {getLayout(<Component {...pageProps} />)}
-            </UserProvider>
-          </CompanyProvider>
+            </AppProvider>
+          </ErrorBoundary>
         </ReduxProvider>
       </SessionProvider>
     </>

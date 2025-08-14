@@ -9,8 +9,6 @@ export default async function handler(
   res: NextApiResponse
   ) {
     console.log("=== Integrations API called ===");
-    // console.log("Method:", req.method);
-    // console.log("Query:", req.query);
   
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });

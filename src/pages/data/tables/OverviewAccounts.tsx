@@ -310,6 +310,24 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     console.log("progressiveLinkedInError:", progressiveLinkedInError);
     console.log("meta:", meta);
     console.log("linkedInData:", linkedInData);
+    
+    // Add more detailed logging
+    console.log("meta keys:", Object.keys(meta));
+    console.log("linkedInData keys:", Object.keys(linkedInData));
+    console.log("meta values:", meta);
+    console.log("linkedInData values:", linkedInData);
+    
+    // Check if data is being transformed
+    const transformed = progressiveData 
+      ? transformProgressiveMetaData(progressiveData)
+      : transformMetaData(meta);
+    console.log("transformed Facebook data:", transformed);
+    
+    const transformedLinkedIn = progressiveLinkedInData 
+      ? transformProgressiveLinkedInData(progressiveLinkedInData)
+      : transformLinkedInData(linkedInData);
+    console.log("transformed LinkedIn data:", transformedLinkedIn);
+    
     console.log("=== End OverviewAccounts Debug ===");
   }, [progressiveData, progressiveStatus, progressiveError, progressiveLinkedInData, progressiveLinkedInStatus, progressiveLinkedInError, meta, linkedInData]);
 

@@ -10,6 +10,16 @@ const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
   const linkedInStats = useSelector(selectLinkedInStats) || {};
 
+  // Debug logging
+  useEffect(() => {
+    console.log("=== Overview Component Debug ===");
+    console.log("metaStats from Redux:", metaStats);
+    console.log("linkedInStats from Redux:", linkedInStats);
+    console.log("metaStats keys:", Object.keys(metaStats));
+    console.log("linkedInStats keys:", Object.keys(linkedInStats));
+    console.log("=== End Overview Component Debug ===");
+  }, [metaStats, linkedInStats]);
+
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
   );

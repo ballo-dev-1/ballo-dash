@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { getFacebookAccessToken } from "@/lib/facebook";
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,18 +18,31 @@ export default async function handler(
   }
 
   try {
-    // Get user session to find access tokens
+    // Get user session to find company ID
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.email) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const accessToken = session.user.accessTokens?.FACEBOOK;
-    if (!accessToken) {
-      return res.status(400).json({ error: "Facebook access token not found in session" });
+    // Get company ID from session
+    const companyId = session.user.companyId;
+    if (!companyId) {
+      return res.status(400).json({ error: "Company ID not found in session" });
     }
 
-    // console.log("Retrieved Facebook access token from session for metric:", metric, session.user.email);
+    // Fetch Facebook access token directly from database
+    console.log("🔍 Fetching Facebook access token from database for metric...");
+    console.log("   User Email:", session.user.email);
+    console.log("   Company ID:", companyId);
+    console.log("   Metric:", metric);
+    
+    const accessToken = await getFacebookAccessToken(companyId);
+    
+    if (!accessToken) {
+      return res.status(400).json({ error: "Facebook access token not found in database" });
+    }
+
+    console.log("✅ Retrieved Facebook access token from database for metric, company:", companyId);
 
     const timeParams = new URLSearchParams();
     if (since) timeParams.append("since=", since.toString());

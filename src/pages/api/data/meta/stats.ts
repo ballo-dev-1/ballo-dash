@@ -2,16 +2,18 @@ import { redis } from "@/app/lib/redis";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { getFacebookAccessToken } from "@/lib/facebook";
 
 function hasDataChanged(oldData: any, newData: any) {
   return JSON.stringify(oldData) !== JSON.stringify(newData);
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  const { platform, pageId, since, until, datePreset } = req.query;
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log("=== Meta Stats API Called ===");
+  console.log("Meta Stats API - Request received");
+  console.log("Query params:", req.query);
+  
+  const { pageId, platform, since, until, datePreset } = req.query;
 
   if (
     typeof platform !== "string" ||
@@ -34,14 +36,27 @@ export default async function handler(
     // console.log("   Facebook token exists:", !!session.user.accessTokens?.FACEBOOK);
     // console.log("   LinkedIn token exists:", !!session.user.accessTokens?.LINKEDIN);
 
-    const accessToken = session.user.accessTokens?.FACEBOOK;
-    if (!accessToken) {
-      console.error("❌ Facebook access token not found in session for user:", session.user.email);
-      return res.status(400).json({ error: "Facebook access token not found in session" });
+    // Get company ID from session
+    const companyId = session.user.companyId;
+    if (!companyId) {
+      console.error("❌ No company ID found in session for user:", session.user.email);
+      return res.status(400).json({ error: "Company ID not found in session" });
     }
 
-    // console.log("✅ Retrieved Facebook access token from session for user:", session.user.email);
-    // console.log("   Token preview:", accessToken.substring(0, 20) + "...");
+    // Fetch Facebook access token directly from database
+    console.log("🔍 Fetching Facebook access token from database for stats...");
+    console.log("   User Email:", session.user.email);
+    console.log("   Company ID:", companyId);
+    
+    const accessToken = await getFacebookAccessToken(companyId);
+    
+    if (!accessToken) {
+      console.error("❌ Facebook access token not found in database for company:", companyId);
+      return res.status(400).json({ error: "Facebook access token not found in database" });
+    }
+
+    console.log("✅ Retrieved Facebook access token from database for stats, company:", companyId);
+    console.log("   Token preview:", accessToken.substring(0, 20) + "...");
 
     const cacheKey = `metaStats:${pageId}:${since || " "}:${until || " "}:${
       datePreset || " "
@@ -134,9 +149,12 @@ export default async function handler(
       await redis.setex(cacheKey, 300, JSON.stringify(newData)); // Cache for 5 minutes
     }
 
+    console.log("Meta final response:", JSON.stringify(newData, null, 2));
+    console.log("=== Meta Stats API Completed Successfully ===");
     res.status(200).json(newData);
   } catch (error) {
     console.error("Error fetching Facebook stats:", error);
+    console.log("=== Meta Stats API Failed ===");
     res.status(500).json({ error: "Failed to fetch Facebook stats" });
   }
 }

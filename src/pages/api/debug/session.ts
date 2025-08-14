@@ -23,16 +23,8 @@ export default async function handler(
         email: session.user.email,
         role: session.user.role,
         companyId: session.user.companyId,
-        accessTokens: {
-          FACEBOOK: session.user.accessTokens?.FACEBOOK ? 
-            `${session.user.accessTokens.FACEBOOK.substring(0, 20)}...` : 
-            null,
-          LINKEDIN: session.user.accessTokens?.LINKEDIN ? 
-            `${session.user.accessTokens.LINKEDIN.substring(0, 20)}...` : 
-            null,
-        },
-        hasFacebookToken: !!session.user.accessTokens?.FACEBOOK,
-        hasLinkedInToken: !!session.user.accessTokens?.LINKEDIN,
+        // No more accessTokens - tokens are fetched directly from database when needed
+        note: "Access tokens are now fetched directly from database via token cache service"
       }
     };
 

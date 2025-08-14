@@ -8,10 +8,7 @@ declare module "next-auth" {
       email: string;
       role: string;
       companyId: string;
-      accessTokens: {
-        FACEBOOK?: string;
-        LINKEDIN?: string;
-      };
+      // No more accessTokens - tokens are fetched directly from database when needed
     };
   }
 
@@ -27,9 +24,6 @@ declare module "next-auth/jwt" {
     id: string;
     role: string;
     companyId: string;
-    accessTokens: {
-      FACEBOOK?: string;
-      LINKEDIN?: string;
-    };
+    // No more accessTokens - tokens are fetched directly from database when needed
   }
 }

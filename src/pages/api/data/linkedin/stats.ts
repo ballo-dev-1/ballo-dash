@@ -3,40 +3,54 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { JSDOM } from "jsdom";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { getLinkedInAccessToken } from "@/lib/linkedin";
 
 const LINKEDIN_API_BASE = "https://api.linkedin.com/v2";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log("=== LinkedIn Stats API Called ===");
   console.log("LinkedIn Stats API - Request received");
+  console.log("Query params:", req.query);
   const rawOrgId = req.query.organizationId;
   const organizationId = Array.isArray(rawOrgId) ? rawOrgId[0] : rawOrgId;
   const { since, until, datePreset } = req.query;
 
   if (!organizationId) {
+    console.log("❌ Missing organizationId");
     return res.status(400).json({ error: "Missing organizationId" });
   }
 
+  console.log("✅ Organization ID:", organizationId);
+  console.log("✅ Since:", since);
+  console.log("✅ Until:", until);
+  console.log("✅ Date Preset:", datePreset);
+
   try {
-    // Get user session to find access tokens
+    // Get user session to find company ID
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.email) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // console.log("🔍 LinkedIn Stats API - Session verification for user:", session.user.email);
-    // console.log("   User ID:", session.user.id);
-    // console.log("   Company ID:", session.user.companyId);
-    // console.log("   Available access tokens:", Object.keys(session.user.accessTokens || {}));
-    
-
-    const accessToken = session.user.accessTokens?.LINKEDIN;
-    if (!accessToken) {
-      // console.error("❌ LinkedIn access token not found in session for user:", session.user.email);
-      return res.status(400).json({ error: "LinkedIn access token not found in session" });
+    // Get company ID from session
+    const companyId = session.user.companyId;
+    if (!companyId) {
+      return res.status(400).json({ error: "Company ID not found in session" });
     }
 
-    // console.log("✅ Retrieved LinkedIn access token from session for user:", session.user.email);
-    // console.log("   Token preview:", accessToken.substring(0, 20) + "...");
+    // Fetch LinkedIn access token directly from database
+    console.log("🔍 Fetching LinkedIn access token from database for stats...");
+    console.log("   User Email:", session.user.email);
+    console.log("   Company ID:", companyId);
+    
+    const accessToken = await getLinkedInAccessToken(companyId);
+    
+    if (!accessToken) {
+      return res.status(400).json({ error: "LinkedIn access token not found in database" });
+    }
+
+    console.log("✅ Retrieved LinkedIn access token: ", accessToken);
+    console.log("   Token preview:", accessToken.substring(0, 20) + "...");
 
     const orgUrn = `urn:li:organization:${organizationId}`;
     const encodedOrgUrn = encodeURIComponent(orgUrn);
@@ -108,9 +122,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     console.log("LinkedIn final response:", JSON.stringify(finalResponse, null, 2));
+    console.log("=== LinkedIn Stats API Completed Successfully ===");
     res.status(200).json(finalResponse);
   } catch (error: any) {
     console.error("LinkedIn API Error:", error);
+    console.log("=== LinkedIn Stats API Failed ===");
     res.status(500).json({
       error: "Failed to fetch LinkedIn data",
       details: error.message,

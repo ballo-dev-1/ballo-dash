@@ -1,17 +1,13 @@
 // src/store/integrationSlice.ts
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "..";
+import { integrationsService } from "@/services/integrationsService";
 
 export const fetchIntegrations = createAsyncThunk(
   "integration/fetchAll",
   async () => {
-    const res1 = await fetch("/api/company");
-    if (!res1.ok) throw new Error("Failed to load company data");
-    const data = await res1.json();
-    const url = `/api/integrations?companyId=${data.company.id}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Failed to fetch integrations");
-    return await res.json();
+    // Use the centralized integrations service
+    return await integrationsService.getIntegrations();
   }
 );
 

@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Company } from "@/types";
 import { RootState } from "..";
+import { companyService } from "@/services/companyService";
 
 interface CompanyState {
   company: Company | null;
@@ -18,10 +19,10 @@ const initialState: CompanyState = {
 export const fetchCompany = createAsyncThunk<Company>(
   "company/fetchCompany",
   async () => {
-    const res = await fetch("/api/company");
-    if (!res.ok) throw new Error("Failed to load company data");
-    const data = await res.json();
-    return data.company;
+    // Use the centralized company service instead of direct API call
+    const company = await companyService.getCompany();
+    if (!company) throw new Error("Failed to load company data");
+    return company;
   }
 );
 

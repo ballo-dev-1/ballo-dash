@@ -89,54 +89,92 @@ export const fetchLinkedInStats = createAsyncThunk<
 >(
   "linkedin/fetchStats",
   async ({ organizationId, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
+    console.log("\n" + "=".repeat(60));
+    console.log("🔗 LINKEDIN REDUX THUNK: fetchLinkedInStats STARTED");
+    console.log("=".repeat(60));
+    console.log("📅 Timestamp:", new Date().toISOString());
+    console.log("📋 Parameters:", { organizationId, platform, since, until, datePreset });
+    
     let state = getState();
+    console.log("🔍 Current Redux state - integrations count:", state.integration.items.length);
+    console.log("🔍 Current Redux state - integration status:", state.integration.status);
 
     if (state.integration.items.length === 0 && state.integration.status !== "loading") {
+      console.log("🔍 No integrations in state, fetching integrations...");
       await dispatch(fetchIntegrations());
       state = getState();
+      console.log("🔍 After fetching integrations - count:", state.integration.items.length);
     }
 
     const integration = state.integration.items.find(
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 
-    if (!integration) throw new Error("No LinkedIn integration found");
+    if (!integration) {
+      console.error("❌ No LinkedIn integration found in Redux state");
+      console.log("🔍 Available integrations:", state.integration.items.map((i: any) => ({ type: i.type, status: i.status })));
+      console.log("=".repeat(60));
+      throw new Error("No LinkedIn integration found");
+    }
+
+    console.log("✅ LinkedIn integration found:", integration.type);
+    console.log("🔑 Integration status:", integration.status);
+    console.log("🔑 Has access token:", !!integration.accessToken);
 
     const accessToken = integration.accessToken;
 
     // Construct URL with all query params (no access token needed - API gets it from session)
     const url = `/api/data/linkedin/stats?organizationId=${organizationId}&since=${since}&until=${until}&datePreset=${datePreset}`;
-    const res = await fetch(url);
+    console.log("🌐 About to call LinkedIn API endpoint:", url);
+    
+    try {
+      const res = await fetch(url);
+      console.log("📡 LinkedIn API response status:", res.status);
+      console.log("📡 LinkedIn API response ok:", res.ok);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("❌ LinkedIn stats fetch failed:", errText);
-      throw new Error(`Failed to fetch LinkedIn stats: ${errText}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("❌ LinkedIn stats fetch failed:", errText);
+        console.log("=".repeat(60));
+        throw new Error(`Failed to fetch LinkedIn stats: ${errText}`);
+      }
+
+      const json = await res.json();  
+      console.log("✅ LinkedIn API response received successfully");
+      console.log("📊 Response data keys:", Object.keys(json));
+      console.log("📊 Organization info:", json.organizationInfo);
+      console.log("📊 Metrics available:", Object.keys(json.metrics || {}));
+
+      // Shape the returned metrics to match LinkedInStats interface
+      const result = {
+        organizationId,
+        organizationName: json.organizationInfo?.name || "Unknown Company",
+        followers: json.metrics.page_follows
+          ? parseInt(json.metrics.page_follows.replace(/[^0-9]/g, ""), 10)
+          : null,
+        impressionCount: json.metrics.impressions?.impressionCount || 0,
+        uniqueImpressionsCount: json.metrics.impressions?.uniqueImpressionsCount || 0,
+        clickCount: json.metrics.impressions?.clickCount || 0,
+        likeCount: json.metrics.impressions?.likeCount || 0,
+        commentCount: json.metrics.impressions?.commentCount || 0,
+        shareCount: json.metrics.impressions?.shareCount || 0,
+        shareMentionsCount: json.metrics.impressions?.shareMentionsCount || 0,
+        commentMentionsCount: json.metrics.impressions?.commentMentionsCount || 0,
+        engagement: json.metrics.impressions?.engagement || 0,
+        since,
+        until,
+        datePreset,
+      };
+      
+      console.log("✅ SUCCESS: LinkedIn data transformed and ready");
+      console.log("📊 Final result:", result);
+      console.log("=".repeat(60));
+      return result;
+    } catch (error) {
+      console.error("❌ ERROR in LinkedIn thunk:", error);
+      console.log("=".repeat(60));
+      throw error;
     }
-
-    const json = await res.json();
-    console.log("✅ LinkedIn Stats Received:", json.metrics);
-
-    // Shape the returned metrics to match LinkedInStats interface
-    return {
-      organizationId,
-      organizationName: json.organizationInfo?.name || "Unknown Company",
-      followers: json.metrics.page_follows
-        ? parseInt(json.metrics.page_follows.replace(/[^0-9]/g, ""), 10)
-        : null,
-      impressionCount: json.metrics.impressions?.impressionCount || 0,
-      uniqueImpressionsCount: json.metrics.impressions?.uniqueImpressionsCount || 0,
-      clickCount: json.metrics.impressions?.clickCount || 0,
-      likeCount: json.metrics.impressions?.likeCount || 0,
-      commentCount: json.metrics.impressions?.commentCount || 0,
-      shareCount: json.metrics.impressions?.shareCount || 0,
-      shareMentionsCount: json.metrics.impressions?.shareMentionsCount || 0,
-      commentMentionsCount: json.metrics.impressions?.commentMentionsCount || 0,
-      engagement: json.metrics.impressions?.engagement || 0,
-      since,
-      until,
-      datePreset,
-    };
   }
 );
 
@@ -160,8 +198,6 @@ export const fetchLinkedInPosts = createAsyncThunk<
 
     if (!integration) throw new Error("No LinkedIn integration found");
 
-    const accessToken = integration.accessToken;
-
     const url = `/api/data/linkedin/posts?organizationId=${organizationId}&since=${since}&until=${until}&datePreset=${datePreset}`;
     const res = await fetch(url);
 
@@ -172,8 +208,7 @@ export const fetchLinkedInPosts = createAsyncThunk<
     }
 
     const json = await res.json();
-    console.log("✅ LinkedIn Posts Received:", json);
-
+    
     return json;
   }
 );
@@ -186,25 +221,14 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
 >(
   "linkedin/fetchLinkedInStatsProgressive",
   async ({ organizationId, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
-    console.log("=== 🚀 fetchLinkedInStatsProgressive started ===");
-    console.log("📋 Parameters:");
-    console.log("   organizationId:", organizationId);
-    console.log("   platform:", platform);
-    console.log("   since:", since);
-    console.log("   until:", until);
-    console.log("   datePreset:", datePreset);
+    
     
     let state = getState();
-    console.log("🔍 Initial state check:");
-    console.log("   Integrations count:", state.integration.items.length);
-    console.log("   Integration status:", state.integration.status);
 
     // Wait for integrations to be loaded if they're not already
     if (state.integration.items.length === 0 && state.integration.status !== "loading") {
-      console.log("📥 No integrations found, fetching integrations...");
       await dispatch(fetchIntegrations());
       state = getState();
-      console.log("✅ Integrations fetched, new count:", state.integration.items.length);
     }
 
     // Wait for integrations to finish loading if they're currently loading
@@ -215,7 +239,6 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
         await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
         state = getState();
       }
-      console.log("✅ Integrations finished loading, status:", state.integration.status);
     }
 
     // Check if integrations loaded successfully
@@ -233,25 +256,14 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 
-    console.log("🔍 Integration details:");
-    console.log("   Available integrations:", state.integration.items.map((i: any) => ({
-      id: i.id,
-      type: i.type,
-      accessToken: i.accessToken ? `${i.accessToken.substring(0, 20)}...` : 'NO_TOKEN'
-    })));
-    console.log("   Looking for integration with type:", platform.toUpperCase());
-    console.log("   Found LinkedIn integration:", integration ? {
-      id: integration.id,
-      type: integration.type,
-      accessToken: integration.accessToken ? `${integration.accessToken.substring(0, 20)}...` : 'NO_TOKEN'
-    } : 'NOT_FOUND');
+    
 
     if (!integration) {
       console.error("❌ No LinkedIn integration found");
       throw new Error("No LinkedIn integration found");
     }
 
-    console.log("✅ Access token found, initializing progressive stats...");
+
 
     // Initialize progressive stats
     dispatch(linkedinSlice.actions.initializeProgressiveLinkedInStats({
@@ -263,23 +275,17 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
       loadingMetrics: ["organizationInfo", "followers", "impressions", "clicks", "engagement"]
     }));
 
-    console.log("📊 Progressive stats initialized, starting individual fetches...");
+
 
     // Fetch organization info first
-    console.log("🏢 Fetching organization info...");
     dispatch(linkedinSlice.actions.startLinkedInMetricFetch("organizationInfo"));
     
     try {
       const orgInfoUrl = `/api/data/linkedin/organizationInfo?organizationId=${organizationId}`;
-      console.log("🌐 Organization info URL:", orgInfoUrl);
       const orgInfoRes = await fetch(orgInfoUrl);
-      console.log("📡 Organization info response status:", orgInfoRes.status);
       
       if (orgInfoRes.ok) {
         const orgInfo = await orgInfoRes.json();
-        console.log("✅ Organization info received:", orgInfo);
-        console.log("   Organization name:", orgInfo.localizedName || orgInfo.name);
-        console.log("   Organization ID:", orgInfo.id);
         dispatch(linkedinSlice.actions.updateLinkedInOrgInfo(orgInfo));
       } else {
         const errorText = await orgInfoRes.text();
@@ -302,43 +308,27 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
       "engagement"
     ];
 
-    console.log("📈 Starting to fetch LinkedIn metrics:", metricList);
-
     // Fetch each metric individually
     for (const metric of metricList) {
       try {
-        console.log(`\n🔄 Starting to fetch LinkedIn metric: ${metric}`);
         dispatch(linkedinSlice.actions.startLinkedInMetricFetch(metric));
         
         const metricUrl = `/api/data/linkedin/metric?organizationId=${organizationId}&metric=${metric}&since=${since}&until=${until}&datePreset=${datePreset}`;
-        console.log(`🌐 Metric ${metric} URL:`, metricUrl);
         
         const res = await fetch(metricUrl);
-        console.log(`📡 Metric ${metric} response status:`, res.status);
 
         if (res.ok) {
           const metricData = await res.json();
-          console.log(`✅ LinkedIn metric ${metric} received:`, metricData);
-          console.log(`   Data type:`, typeof metricData);
-          console.log(`   Data keys:`, Object.keys(metricData || {}));
           
           // Log specific data for each metric type
           switch (metric) {
             case "followers":
-              console.log(`   📊 Followers count:`, metricData.followers);
               break;
             case "impressions":
-              console.log(`   👁️ Impression count:`, metricData.impressionCount);
-              console.log(`   👁️ Unique impressions:`, metricData.uniqueImpressionsCount);
               break;
             case "clicks":
-              console.log(`   🖱️ Click count:`, metricData.clickCount);
               break;
             case "engagement":
-              console.log(`   ❤️ Engagement:`, metricData.engagement);
-              console.log(`   👍 Like count:`, metricData.likeCount);
-              console.log(`   💬 Comment count:`, metricData.commentCount);
-              console.log(`   🔄 Share count:`, metricData.shareCount);
               break;
           }
           
@@ -353,8 +343,6 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
         dispatch(linkedinSlice.actions.failLinkedInMetric({ metric, error: error instanceof Error ? error.message : 'Unknown error' }));
       }
     }
-    
-    console.log("\n=== 🎉 fetchLinkedInStatsProgressive completed ===");
     dispatch(linkedinSlice.actions.completeProgressiveLinkedInFetch());
   }
 );
@@ -367,7 +355,6 @@ const linkedinSlice = createSlice({
     // Progressive update actions
     initializeProgressiveLinkedInStats: (state, action) => {
       const { organizationId, platform, since, until, datePreset, loadingMetrics } = action.payload;
-      console.log("🏗️ Initializing progressive LinkedIn stats with payload:", action.payload);
       state.progressiveStats = {
         organizationId,
         platform,
@@ -379,29 +366,21 @@ const linkedinSlice = createSlice({
       };
       state.statusProgressiveStats = "loading";
       state.errorProgressiveStats = null;
-      console.log("✅ Initialized progressive LinkedIn stats:", state.progressiveStats);
     },
     updateLinkedInOrgInfo: (state, action) => {
-      console.log("🏢 Updating LinkedIn organization info:", action.payload);
       if (state.progressiveStats) {
         const oldName = state.progressiveStats.organizationName;
         state.progressiveStats.organizationName = action.payload.localizedName || action.payload.name || "Unknown";
-        console.log(`   Organization name updated: "${oldName}" → "${state.progressiveStats.organizationName}"`);
       }
     },
     startLinkedInMetricFetch: (state, action) => {
       const metric = action.payload;
-      console.log(`🔄 Starting fetch for LinkedIn metric: ${metric}`);
       if (state.progressiveStats) {
         state.progressiveStats.loadingMetrics.push(metric);
-        console.log(`   Loading metrics: [${state.progressiveStats.loadingMetrics.join(', ')}]`);
       }
     },
     updateLinkedInMetric: (state, action) => {
       const { metric, data } = action.payload;
-      console.log(`🔄 Updating LinkedIn metric ${metric} with data:`, data);
-      console.log(`   Data type:`, typeof data);
-      console.log(`   Data keys:`, Object.keys(data || {}));
       
       if (state.progressiveStats) {
         // Remove from loading
@@ -413,38 +392,22 @@ const linkedinSlice = createSlice({
         // Update metrics data
         switch (metric) {
           case "followers":
-            console.log(`   Setting followers to:`, data.followers);
             state.progressiveStats.followers = data.followers || null;
             break;
           case "impressions":
-            console.log(`   Setting impressionCount to:`, data.impressionCount);
-            console.log(`   Setting uniqueImpressionsCount to:`, data.uniqueImpressionsCount);
             state.progressiveStats.impressionCount = data.impressionCount || 0;
             state.progressiveStats.uniqueImpressionsCount = data.uniqueImpressionsCount || 0;
             break;
           case "clicks":
-            console.log(`   Setting clickCount to:`, data.clickCount);
             state.progressiveStats.clickCount = data.clickCount || 0;
             break;
           case "engagement":
-            console.log(`   Setting engagement to:`, data.engagement);
-            console.log(`   Setting likeCount to:`, data.likeCount);
-            console.log(`   Setting commentCount to:`, data.commentCount);
-            console.log(`   Setting shareCount to:`, data.shareCount);
             state.progressiveStats.engagement = data.engagement || 0;
             state.progressiveStats.likeCount = data.likeCount || 0;
             state.progressiveStats.commentCount = data.commentCount || 0;
             state.progressiveStats.shareCount = data.shareCount || 0;
             break;
         }
-        console.log(`✅ Updated progressive LinkedIn stats for ${metric}:`, {
-          followers: state.progressiveStats.followers,
-          impressionCount: state.progressiveStats.impressionCount,
-          clickCount: state.progressiveStats.clickCount,
-          engagement: state.progressiveStats.engagement,
-          completedMetrics: state.progressiveStats.completedMetrics,
-          loadingMetrics: state.progressiveStats.loadingMetrics
-        });
       }
     },
     failLinkedInMetric: (state, action) => {
@@ -452,43 +415,36 @@ const linkedinSlice = createSlice({
       if (state.progressiveStats) {
         // Remove from loading
         state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
-        console.error(`Failed to fetch LinkedIn metric ${metric}:`, error);
       }
     },
     completeProgressiveLinkedInFetch: (state) => {
-      console.log("🎯 Completing progressive LinkedIn fetch");
       if (state.progressiveStats) {
         state.statusProgressiveStats = "succeeded";
-        console.log("📊 Final progressive LinkedIn stats state:");
-        console.log("   Organization:", state.progressiveStats.organizationName);
-        console.log("   Followers:", state.progressiveStats.followers);
-        console.log("   Impressions:", state.progressiveStats.impressionCount);
-        console.log("   Clicks:", state.progressiveStats.clickCount);
-        console.log("   Engagement:", state.progressiveStats.engagement);
-        console.log("   Completed metrics:", state.progressiveStats.completedMetrics);
-        console.log("   Loading metrics:", state.progressiveStats.loadingMetrics);
       }
     },
     resetProgressiveLinkedInStats: (state) => {
-      console.log("🔄 Resetting progressive LinkedIn stats");
       state.progressiveStats = null;
       state.statusProgressiveStats = "idle";
       state.errorProgressiveStats = null;
-      console.log("✅ Progressive LinkedIn stats reset complete");
     }
   },
   extraReducers: (builder) => {
     builder
       // Stats
       .addCase(fetchLinkedInStats.pending, (state) => {
+        console.log("🔄 LinkedIn Reducer: fetchLinkedInStats.pending - Setting status to loading");
         state.statusStats = "loading";
         state.errorStats = null;
       })
       .addCase(fetchLinkedInStats.fulfilled, (state, action) => {
+        console.log("✅ LinkedIn Reducer: fetchLinkedInStats.fulfilled - Setting stats data");
+        console.log("📊 LinkedIn stats received:", action.payload);
         state.statusStats = "succeeded";
         state.stats = action.payload;
       })
       .addCase(fetchLinkedInStats.rejected, (state, action) => {
+        console.log("❌ LinkedIn Reducer: fetchLinkedInStats.rejected - Setting error state");
+        console.log("❌ Error:", action.error.message);
         state.statusStats = "failed";
         state.errorStats = action.error.message || "Failed to load LinkedIn stats";
       })

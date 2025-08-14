@@ -92,14 +92,24 @@ export const fetchMetaStats = createAsyncThunk<
     { pageId, platform, since = "", until = "", datePreset = "" },
     { dispatch, getState }
   ) => {
+    console.log("\n" + "=".repeat(60));
+    console.log("📘 META REDUX THUNK: fetchMetaStats STARTED");
+    console.log("=".repeat(60));
+    console.log("📅 Timestamp:", new Date().toISOString());
+    console.log("📋 Parameters:", { pageId, platform, since, until, datePreset });
+    
     let state = getState();
+    console.log("🔍 Current Redux state - integrations count:", state.integration.items.length);
+    console.log("🔍 Current Redux state - integration status:", state.integration.status);
 
     if (
       state.integration.items.length === 0 &&
       state.integration.status !== "loading"
     ) {
+      console.log("🔍 No integrations in state, fetching integrations...");
       await dispatch(fetchIntegrations());
       state = getState();
+      console.log("🔍 After fetching integrations - count:", state.integration.items.length);
     }
 
     const metaIntegration = state.integration.items.find(
@@ -107,20 +117,56 @@ export const fetchMetaStats = createAsyncThunk<
         integration.type === platform.toUpperCase()
     );
 
-    if (!metaIntegration) throw new Error("No Meta integration found");
+    if (!metaIntegration) {
+      console.error("❌ No Meta integration found in Redux state");
+      console.log("🔍 Available integrations:", state.integration.items.map((i: any) => ({ type: i.type, status: i.status })));
+      console.log("🔍 Looking for platform:", platform.toUpperCase());
+      console.log("=".repeat(60));
+      throw new Error("No Meta integration found");
+    }
+
+    console.log("✅ Meta integration found:", metaIntegration.type);
+    console.log("🔑 Integration status:", metaIntegration.status);
+    console.log("🔑 Has access token:", !!metaIntegration.accessToken);
 
     const accessToken = metaIntegration.accessToken;
 
-    const res = await fetch(
-      `/api/data/meta/stats?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`
-    );
+    const url = `/api/data/meta/stats?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`;
+    console.log("🌐 About to call Meta API endpoint:", url);
+    
+    try {
+      const res = await fetch(url);
+      console.log("📡 Meta API response status:", res.status);
+      console.log("📡 Meta API response ok:", res.ok);
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Failed to fetch Meta stats: ${errText}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error("❌ Meta stats fetch failed:", errText);
+        console.log("=".repeat(60));
+        throw new Error(`Failed to fetch Meta stats: ${errText}`);
+      }
+
+      const result = await res.json();
+      console.log("✅ Meta API response received successfully");
+      console.log("📊 Response data keys:", Object.keys(result));
+      console.log("📊 Page info:", result.pageInfo);
+      console.log("📊 Metrics available:", Object.keys(result.metrics || {}));
+      console.log("📊 Recent post:", result.recentPost ? "Available" : "None");
+      
+      console.log("✅ SUCCESS: Meta data fetched and ready");
+      console.log("📊 Final result summary:", {
+        platform: result.platform,
+        pageName: result.pageInfo?.name,
+        metricsCount: Object.keys(result.metrics || {}).length,
+        hasRecentPost: !!result.recentPost
+      });
+      console.log("=".repeat(60));
+      return result;
+    } catch (error) {
+      console.error("❌ ERROR in Meta thunk:", error);
+      console.log("=".repeat(60));
+      throw error;
     }
-
-    return await res.json();
   }
 );
 
@@ -198,27 +244,30 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
     //   accessToken: integration.accessToken ? `${integration.accessToken.substring(0, 20)}...` : 'NO_TOKEN'
     // } : 'NOT_FOUND');
 
-    let accessToken: string;
-
-    if (!integration) {
-      console.log("No Meta integration found, trying environment variable...");
-      accessToken = process.env.NEXT_PUBLIC_FACEBOOK_ACCESS_TOKEN || "";
-      
-      if (!accessToken) {
-        console.error("No Meta access token found in environment variables");
-        throw new Error("No Meta access token found");
-      }
-      
-      console.log("Using Meta access token from environment variable");
-    } else {
-      accessToken = integration.accessToken;
-      console.log("Using Meta access token from integration");
+    // Get company ID from state
+    const companyId = state.company.data?.id;
+    if (!companyId) {
+      console.error("No company ID found in state");
+      throw new Error("Company ID not found");
     }
 
+    // Check if we have a Facebook integration
+    const facebookIntegration = state.integration.items.find(
+      (integration: { type: string }) => integration.type === 'FACEBOOK'
+    );
+    
+    if (!facebookIntegration) {
+      console.error("No Facebook integration found for company:", companyId);
+      throw new Error("Facebook integration not found");
+    }
+
+    const accessToken = facebookIntegration.accessToken;
     if (!accessToken) {
-      console.error("Meta access token not found");
-      throw new Error("Meta access token not found");
+      console.error("Facebook access token not found in integration");
+      throw new Error("Facebook access token not found");
     }
+
+    console.log("Using Facebook access token from database integration");
 
     // Initialize progressive stats
     console.log("Initializing progressive stats...");
@@ -419,14 +468,19 @@ const metaSlice = createSlice({
     builder
       // Meta Stats
       .addCase(fetchMetaStats.pending, (state) => {
+        console.log("🔄 Meta Reducer: fetchMetaStats.pending - Setting status to loading");
         state.statusStats = "loading";
         state.errorStats = null;
       })
       .addCase(fetchMetaStats.fulfilled, (state, action) => {
+        console.log("✅ Meta Reducer: fetchMetaStats.fulfilled - Setting stats data");
+        console.log("📊 Meta stats received:", action.payload);
         state.statusStats = "succeeded";
         state.stats = action.payload;
       })
       .addCase(fetchMetaStats.rejected, (state, action) => {
+        console.log("❌ Meta Reducer: fetchMetaStats.rejected - Setting error state");
+        console.log("❌ Error:", action.error.message);
         state.statusStats = "failed";
         state.errorStats = action.error.message || "Failed to load Meta stats";
       })

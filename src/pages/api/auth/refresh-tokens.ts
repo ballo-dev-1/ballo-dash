@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { db } from "@/db/db";
-import { integrations } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { tokenCache } from "@/lib/tokenCache";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,32 +18,20 @@ export default async function handler(
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // console.log("🔄 Force refreshing tokens for user:", session.user.email);
-    // console.log("   Company ID:", session.user.companyId);
+    console.log("🔄 Force refreshing token cache for user:", session.user.email);
+    console.log("   Company ID:", session.user.companyId);
 
-    // Fetch fresh integrations from database
-    const companyIntegrations = await db
-      .select()
-      .from(integrations)
-      .where(eq(integrations.companyId, session.user.companyId));
+    // Clear all cached tokens for this company to force fresh database fetch
+    tokenCache.clearCompanyTokens(session.user.companyId);
 
-    const accessTokens: { FACEBOOK?: string; LINKEDIN?: string } = {};
-    
-    companyIntegrations.forEach((integration) => {
-      if (integration.accessToken) {
-        accessTokens[integration.type as keyof typeof accessTokens] = integration.accessToken;
-      }
-    });
-
-    // Update the session with new tokens
-    session.user.accessTokens = accessTokens;
-
+    // Get cache statistics
+    const cacheStats = tokenCache.getCacheStats();
 
     res.status(200).json({
-      message: "Tokens refreshed successfully",
-      availableTokens: Object.keys(accessTokens),
-      hasFacebookToken: !!accessTokens.FACEBOOK,
-      hasLinkedInToken: !!accessTokens.LINKEDIN
+      message: "Token cache refreshed successfully",
+      note: "Access tokens are now fetched directly from database via token cache service",
+      companyId: session.user.companyId,
+      cacheStats: cacheStats
     });
 
   } catch (error) {
