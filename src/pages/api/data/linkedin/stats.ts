@@ -74,6 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
     const orgInfoData = await infoRes.json();
+    console.log("🏢 Organization Info:", orgInfoData);
 
     // Fetch Impressions and Share Statistics
     const statsUrl = `${LINKEDIN_API_BASE}/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${encodedOrgUrn}`;
