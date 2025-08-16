@@ -99,28 +99,35 @@ export const fetchMetaStats = createAsyncThunk<
     console.log("📋 Parameters:", { pageId, platform, since, until, datePreset });
     
     let state = getState();
-    console.log("🔍 Current Redux state - integrations count:", state.integration.items.length);
-    console.log("🔍 Current Redux state - integration status:", state.integration.status);
+    console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
+    console.log("Current Redux state - integration status:", state.integrations.loading);
 
     if (
-      state.integration.items.length === 0 &&
-      state.integration.status !== "loading"
+      state.integrations.integrations.length === 0 &&
+      state.integrations.loading !== true
     ) {
-      console.log("🔍 No integrations in state, fetching integrations...");
-      await dispatch(fetchIntegrations());
-      state = getState();
-      console.log("🔍 After fetching integrations - count:", state.integration.items.length);
+      console.log("No integrations in state, fetching integrations...");
+      // Get company ID from company state
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+        console.log("After fetching integrations - count:", state.integrations.integrations.length);
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
-    const metaIntegration = state.integration.items.find(
+    const metaIntegration = state.integrations.integrations.find(
       (integration: { type: string }) =>
         integration.type === platform.toUpperCase()
     );
 
     if (!metaIntegration) {
       console.error("❌ No Meta integration found in Redux state");
-      console.log("🔍 Available integrations:", state.integration.items.map((i: any) => ({ type: i.type, status: i.status })));
-      console.log("🔍 Looking for platform:", platform.toUpperCase());
+      console.log("Available integrations:", state.integrations.integrations.map((i: any) => ({ type: i.type, status: i.status })));
+      console.log("Looking for platform:", platform.toUpperCase());
       console.log("=".repeat(60));
       throw new Error("No Meta integration found");
     }
@@ -198,37 +205,43 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
 
     // Wait for integrations to be loaded if they're not already
     if (
-      state.integration.items.length === 0 &&
-      state.integration.status !== "loading"
+      state.integrations.integrations.length === 0 &&
+      state.integrations.loading !== true
     ) {
       // console.log("No integrations found, fetching integrations...");
-      await dispatch(fetchIntegrations());
-      state = getState();
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
     // Wait for integrations to finish loading if they're currently loading
-    if (state.integration.status === "loading") {
+    if (state.integrations.loading === true) {
       console.log("Waiting for integrations to finish loading...");
       // Wait for the integration status to change from loading
-      while (state.integration.status === "loading") {
+      while (state.integrations.loading === true) {
         await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
         state = getState();
       }
-      console.log("Integrations finished loading, status:", state.integration.status);
+      console.log("Integrations finished loading, status:", state.integrations.loading);
     }
 
     // Check if integrations loaded successfully
-    if (state.integration.status === "failed") {
-      console.error("Failed to load integrations:", state.integration.error);
+    if (state.integrations.error) {
+      console.error("Failed to load integrations:", state.integrations.error);
       throw new Error("Failed to load integrations");
     }
 
-    if (state.integration.items.length === 0) {
+    if (state.integrations.integrations.length === 0) {
       console.error("No integrations found after loading");
       throw new Error("No integrations found");
     }
 
-    const integration = state.integration.items.find(
+    const integration = state.integrations.integrations.find(
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 
@@ -252,7 +265,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
     }
 
     // Check if we have a Facebook integration
-    const facebookIntegration = state.integration.items.find(
+    const facebookIntegration = state.integrations.integrations.find(
       (integration: { type: string }) => integration.type === 'FACEBOOK'
     );
     
@@ -370,14 +383,20 @@ export const fetchMetaPosts = createAsyncThunk<
     let state = getState();
 
     if (
-      state.integration.items.length === 0 &&
-      state.integration.status !== "loading"
+      state.integrations.integrations.length === 0 &&
+      state.integrations.loading !== true
     ) {
-      await dispatch(fetchIntegrations());
-      state = getState();
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
-    const metaIntegration = state.integration.items.find(
+    const metaIntegration = state.integrations.integrations.find(
       (integration: { type: string }) =>
         integration.type === platform.toUpperCase()
     );

@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Get user session to find company ID
     const session = await getServerSession(req, res, authOptions);
-    console.log("🔍 LinkedIn Organization Info API - Session check");
+    console.log("LinkedIn Organization Info API - Session check");
     console.log("   Session exists:", !!session);
     console.log("   User email:", session?.user?.email);
     console.log("   Company ID:", session?.user?.companyId);
@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Fetch LinkedIn access token directly from database
-    console.log("🔍 Fetching LinkedIn access token from database...");
+    console.log("Fetching LinkedIn access token from database...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     

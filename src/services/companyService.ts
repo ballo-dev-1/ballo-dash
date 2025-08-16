@@ -20,13 +20,13 @@ class CompanyService {
   public async getCompany(): Promise<Company | null> {
     // Return cached data if it's still valid
     if (this.companyData && this.isDataFresh()) {
-      console.log('🔍 CompanyService: Returning cached company data');
+      console.log('CompanyService: Returning cached company data');
       return this.companyData;
     }
 
     // Prevent multiple simultaneous requests
     if (this.isLoading) {
-      console.log('🔍 CompanyService: Request already in progress, waiting...');
+      console.log('CompanyService: Request already in progress, waiting...');
       // Wait for the current request to complete
       while (this.isLoading) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -35,23 +35,23 @@ class CompanyService {
     }
 
     try {
-      console.log('🔍 CompanyService: Fetching company data from API...');
+      console.log('CompanyService: Fetching company data from API...');
       this.isLoading = true;
       const response = await fetch('/api/company');
       
-      console.log('🔍 CompanyService: API response status:', response.status);
+      console.log('CompanyService: API response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch company data: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('🔍 CompanyService: API response data:', data);
+      console.log('CompanyService: API response data:', data);
       
       this.companyData = data.company;
       this.lastFetch = Date.now();
       
-      console.log('🔍 CompanyService: Company data stored in cache');
+      console.log('CompanyService: Company data stored in cache');
       return this.companyData;
     } catch (error) {
       console.error('❌ CompanyService: Error fetching company data:', error);

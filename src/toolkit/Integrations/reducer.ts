@@ -1,65 +1,167 @@
 // src/store/integrationSlice.ts
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { RootState } from "..";
-import { integrationsService } from "@/services/integrationsService";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { integrationsService } from '@/services/integrationsService';
 
-export const fetchIntegrations = createAsyncThunk(
-  "integration/fetchAll",
-  async () => {
-    // Use the centralized integrations service
-    return await integrationsService.getIntegrations();
-  }
-);
-
-interface Integration {
+// Types
+export interface Integration {
   id: string;
   companyId: string;
   type: string;
+  status: string;
+  appId?: string;
+  appSecret?: string;
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string | null;
-  status: string;
+  metadata?: any;
   createdAt: string;
   updatedAt: string;
 }
 
-interface IntegrationState {
-  items: Integration[];
-  status: "idle" | "loading" | "succeeded" | "failed";
+interface IntegrationsState {
+  integrations: Integration[];
+  loading: boolean;
   error: string | null;
+  hasIntegrations: boolean;
 }
 
-const initialState: IntegrationState = {
-  items: [],
-  status: "idle",
+const initialState: IntegrationsState = {
+  integrations: [],
+  loading: false,
   error: null,
+  hasIntegrations: false,
 };
 
-const integrationSlice = createSlice({
-  name: "integration",
+// Async thunks
+export const fetchIntegrations = createAsyncThunk(
+  'integrations/fetchIntegrations',
+  async (companyId: string) => {
+    const data = await integrationsService.getIntegrations();
+    return data;
+  }
+);
+
+export const createIntegration = createAsyncThunk(
+  'integrations/createIntegration',
+  async (integrationData: any) => {
+    const data = await integrationsService.createIntegration(integrationData);
+    return data;
+  }
+);
+
+export const updateIntegration = createAsyncThunk(
+  'integrations/updateIntegration',
+  async ({ id, updateData }: { id: string; updateData: any }) => {
+    const data = await integrationsService.updateIntegration(id, updateData);
+    return data;
+  }
+);
+
+export const deleteIntegration = createAsyncThunk(
+  'integrations/deleteIntegration',
+  async (integrationId: string) => {
+    await integrationsService.deleteIntegration(integrationId);
+    return integrationId;
+  }
+);
+
+// Slice
+const integrationsSlice = createSlice({
+  name: 'integrations',
   initialState,
-  reducers: {},
+  reducers: {
+    clearIntegrations: (state) => {
+      state.integrations = [];
+      state.hasIntegrations = false;
+      state.error = null;
+    },
+    setHasIntegrations: (state, action: PayloadAction<boolean>) => {
+      state.hasIntegrations = action.payload;
+    },
+  },
   extraReducers: (builder) => {
+    // Fetch integrations
     builder
       .addCase(fetchIntegrations.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchIntegrations.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.items = action.payload;
+        state.loading = true;
         state.error = null;
       })
+      .addCase(fetchIntegrations.fulfilled, (state, action) => {
+        state.loading = false;
+        state.integrations = action.payload;
+        state.hasIntegrations = action.payload.length > 0;
+        console.log('🔍 Redux: fetchIntegrations.fulfilled - integrations:', action.payload.length, 'hasIntegrations:', state.hasIntegrations);
+      })
       .addCase(fetchIntegrations.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.error.message || "Failed to load integrations";
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch integrations';
+        state.hasIntegrations = false;
+      });
+
+    // Create integration
+    builder
+      .addCase(createIntegration.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createIntegration.fulfilled, (state, action) => {
+        state.loading = false;
+        state.integrations.push(action.payload);
+        state.hasIntegrations = true;
+        console.log('🔍 Redux: createIntegration.fulfilled - integrations:', state.integrations.length, 'hasIntegrations:', state.hasIntegrations);
+      })
+      .addCase(createIntegration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create integration';
+      });
+
+    // Update integration
+    builder
+      .addCase(updateIntegration.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateIntegration.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.integrations.findIndex(i => i.id === action.payload.id);
+        if (index !== -1) {
+          state.integrations[index] = action.payload;
+        }
+        // Ensure hasIntegrations is updated after any integration update
+        state.hasIntegrations = state.integrations.length > 0;
+        console.log('🔍 Redux: updateIntegration.fulfilled - integrations:', state.integrations.length, 'hasIntegrations:', state.hasIntegrations);
+      })
+      .addCase(updateIntegration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to update integration';
+      });
+
+    // Delete integration
+    builder
+      .addCase(deleteIntegration.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteIntegration.fulfilled, (state, action) => {
+        state.loading = false;
+        state.integrations = state.integrations.filter(i => i.id !== action.payload);
+        state.hasIntegrations = state.integrations.length > 0;
+        console.log('🔍 Redux: deleteIntegration.fulfilled - integrations:', state.integrations.length, 'hasIntegrations:', state.hasIntegrations);
+      })
+      .addCase(deleteIntegration.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to delete integration';
       });
   },
 });
 
-export const selectIntegration = (state: RootState) => state.integration.items;
-export const selectIntegrationLoading = (state: RootState) =>
-  state.integration.status;
-export const selectIntegrationError = (state: RootState) =>
-  state.integration.error;
+// Actions
+export const { clearIntegrations, setHasIntegrations } = integrationsSlice.actions;
 
-export default integrationSlice.reducer;
+// Selectors
+export const selectIntegrations = (state: any) => state.integrations.integrations;
+export const selectHasIntegrations = (state: any) => state.integrations.hasIntegrations;
+export const selectIntegrationsLoading = (state: any) => state.integrations.loading;
+export const selectIntegrationsError = (state: any) => state.integrations.error;
+
+export default integrationsSlice.reducer;

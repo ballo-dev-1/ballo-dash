@@ -38,22 +38,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserLocal] = useState<User | null>(null);
   const dispatch = useDispatch<AppDispatch>();
 
-  console.log('🔍 AppContext: Component is mounting...');
-  console.log('🔍 AppContext: Dispatch function:', !!dispatch);
-
   useEffect(() => {
-    console.log('🔍 AppContext: useEffect triggered');
-    console.log('🔍 AppContext: This is a test - if you see this, useEffect is working');
-    
+
     if (!dispatch) {
       console.error('❌ AppContext: Dispatch is not available');
       return;
     }
     
     const fetchData = async () => {
-      console.log('🔍 AppContext: fetchData function started');
       try {
-        console.log('🚀 AppContext: Starting initial data fetch...');
         
         // Use the centralized services
         const [companyData, userData] = await Promise.all([
@@ -61,7 +54,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           userService.getUser(),
         ]);
 
-        console.log('🔍 AppContext: Services returned:', { companyData: !!companyData, userData: !!userData });
+        console.log('AppContext: Services returned:', { companyData: !!companyData, userData: !!userData });
 
         // Only set company if we got valid data
         if (companyData) {
@@ -72,97 +65,93 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           
           // 🆕 Fetch LinkedIn and Facebook data if integrations exist
           try {
-            console.log('🔍 AppContext: Fetching integrations...');
+            console.log('AppContext: Fetching integrations...');
             const integrations = await integrationsService.getIntegrations();
-            console.log('🔍 AppContext: Integrations fetched:', integrations?.length || 0);
+            console.log('AppContext: Integrations fetched:', integrations?.length || 0);
+            
+
             
             // Add detailed logging for integrations
-            console.log('🔍 AppContext: All integrations details:', integrations?.map((integration: any) => ({
+            console.log('AppContext: All integrations details:', integrations?.map((integration: any) => ({
               type: integration.type,
               status: integration.status,
               hasAccessToken: !!integration.accessToken
             })));
             
-            // Find LinkedIn integration
-            const linkedinIntegration = integrations.find((integration: any) => 
-              integration.type === 'LINKEDIN' && integration.status === 'CONNECTED'
-            );
-            
-            console.log('🔍 AppContext: LinkedIn integration search result:', linkedinIntegration ? {
-              type: linkedinIntegration.type,
-              status: linkedinIntegration.status,
-              hasAccessToken: !!linkedinIntegration.accessToken
-            } : 'Not found');
-            
-            if (linkedinIntegration) {
-              console.log('🔗 AppContext: LinkedIn integration found, fetching metrics...');
+            // Auto-fetch data for all CONNECTED integrations
+            const autoFetchDataForIntegration = async (integration: any) => {
               try {
-                // For now, we'll use a default organization ID since we don't have social profiles set up yet
-                // TODO: Get this from social profiles when they're properly configured
-                const defaultLinkedInOrgId = '90362182'; // This should come from your database
+                console.log(`AppContext: Auto-fetching data for ${integration.type} integration...`);
                 
-                // Dispatch Redux action to fetch LinkedIn stats
-                await dispatch(fetchLinkedInStats({
-                  organizationId: defaultLinkedInOrgId,
-                  platform: 'linkedin',
-                  since: '',
-                  until: '',
-                  datePreset: 'last_30_days'
-                })).unwrap();
-                
-                console.log('✅ AppContext: LinkedIn data fetched successfully via Redux');
+                if (integration.type === 'LINKEDIN') {
+                  // For now, we'll use a default organization ID since we don't have social profiles set up yet
+                  // TODO: Get this from social profiles when they're properly configured
+                  const defaultLinkedInOrgId = '90362182'; // This should come from your database
+                  
+                  await dispatch(fetchLinkedInStats({
+                    organizationId: defaultLinkedInOrgId,
+                    platform: 'linkedin',
+                    since: '',
+                    until: '',
+                    datePreset: 'last_30_days'
+                  })).unwrap();
+                  
+                  console.log('✅ AppContext: LinkedIn data auto-fetched successfully');
+                } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
+                  // For now, we'll use a default page ID since we don't have social profiles set up yet
+                  // TODO: Get this from social profiles when they're properly configured
+                  const defaultPageId = 'me'; // This should come from your database
+                  
+                  await dispatch(fetchMetaStats({
+                    pageId: defaultPageId,
+                    platform: integration.type.toLowerCase(),
+                    since: '',
+                    until: '',
+                    datePreset: 'last_30_days'
+                  })).unwrap();
+                  
+                  console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
+                } else {
+                  console.log(`ℹ️ AppContext: Auto-fetch not implemented for platform: ${integration.type}`);
+                }
               } catch (error) {
-                console.warn('⚠️ AppContext: LinkedIn data fetch failed:', error);
+                console.warn(`⚠️ AppContext: Auto-fetch failed for ${integration.type}:`, error);
               }
-            } else {
-              console.log('ℹ️ AppContext: No active LinkedIn integration found');
-              console.log('🔍 AppContext: Looking for integrations with type "LINKEDIN" and status "CONNECTED"');
-              console.log('🔍 AppContext: Available LinkedIn integrations:', integrations?.filter((i: any) => i.type === 'LINKEDIN').map((i: any) => ({
-                type: i.type,
-                status: i.status,
-                hasAccessToken: !!i.accessToken
-              })));
-            }
-            
-            // Find Facebook integration
-            const facebookIntegration = integrations.find((integration: any) => 
-              integration.type === 'FACEBOOK' && integration.status === 'CONNECTED'
+            };
+
+            // Find all CONNECTED integrations and auto-fetch their data
+            const connectedIntegrations = integrations.filter((integration: any) => 
+              integration.status === 'CONNECTED' && 
+              (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM')
             );
-            
-            console.log('🔍 AppContext: Facebook integration search result:', facebookIntegration ? {
-              type: facebookIntegration.type,
-              status: facebookIntegration.status,
-              hasAccessToken: !!facebookIntegration.accessToken
-            } : 'Not found');
-            
-            if (facebookIntegration) {
-              console.log('📘 AppContext: Facebook integration found, fetching page info...');
-              try {
-                // For now, we'll use a default page ID since we don't have social profiles set up yet
-                // TODO: Get this from social profiles when they're properly configured
-                const defaultFacebookPageId = 'me'; // This should come from your database
-                
-                // Dispatch Redux action to fetch Facebook stats
-                await dispatch(fetchMetaStats({
-                  pageId: defaultFacebookPageId,
-                  platform: 'facebook',
-                  since: '',
-                  until: '',
-                  datePreset: 'last_30_days'
-                })).unwrap();
-                
-                console.log('✅ AppContext: Facebook data fetched successfully via Redux');
-              } catch (error) {
-                console.warn('⚠️ AppContext: Facebook data fetch failed:', error);
-              }
+
+            console.log('AppContext: Found CONNECTED integrations:', connectedIntegrations.map(i => ({
+              type: i.type,
+              status: i.status,
+              hasAccessToken: !!i.accessToken
+            })));
+
+            // Auto-fetch data for all CONNECTED integrations in parallel
+            if (connectedIntegrations.length > 0) {
+              console.log('🚀 AppContext: Starting auto-fetch for all CONNECTED integrations...');
+              
+              // Use Promise.allSettled to handle multiple integrations without failing if one fails
+              const autoFetchPromises = connectedIntegrations.map(autoFetchDataForIntegration);
+              const results = await Promise.allSettled(autoFetchPromises);
+              
+              // Log results
+              results.forEach((result, index) => {
+                const integration = connectedIntegrations[index];
+                if (result.status === 'fulfilled') {
+                  console.log(`✅ AppContext: Auto-fetch completed for ${integration.type}`);
+                } else {
+                  console.warn(`⚠️ AppContext: Auto-fetch failed for ${integration.type}:`, result.reason);
+                }
+              });
+              
+              console.log('🎯 AppContext: Auto-fetch for all CONNECTED integrations completed');
             } else {
-              console.log('ℹ️ AppContext: No active Facebook integration found');
-              console.log('🔍 AppContext: Looking for integrations with type "FACEBOOK" and status "CONNECTED"');
-              console.log('🔍 AppContext: Available Facebook integrations:', integrations?.filter((i: any) => i.type === 'FACEBOOK').map((i: any) => ({
-                type: i.type,
-                status: i.status,
-                hasAccessToken: !!i.accessToken
-              })));
+              console.log('ℹ️ AppContext: No CONNECTED integrations found for auto-fetch');
             }
             
           } catch (error) {
@@ -192,7 +181,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     fetchData();
   }, [dispatch]);
 
-  console.log('🔍 AppContext: About to render children, company:', !!company, 'user:', !!user);
+  console.log('AppContext: About to render children, company:', !!company, 'user:', !!user);
 
   return (
     <AppContext.Provider value={{ company, user, setCompany: setCompanyLocal, setUser: setUserLocal }}>

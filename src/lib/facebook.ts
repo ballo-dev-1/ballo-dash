@@ -16,7 +16,7 @@ export async function getFacebookAccessToken(companyId: string): Promise<string 
       return cachedToken;
     }
 
-    console.log("🔍 Fetching Facebook access token from database for company:", companyId);
+    console.log("Fetching Facebook access token from database for company:", companyId);
     
     const facebookIntegration = await db
       .select()
@@ -92,7 +92,7 @@ export async function getInstagramAccessToken(companyId: string): Promise<string
       return cachedToken;
     }
 
-    console.log("🔍 Fetching Instagram access token from database for company:", companyId);
+    console.log("Fetching Instagram access token from database for company:", companyId);
     
     const instagramIntegration = await db
       .from(integrations)

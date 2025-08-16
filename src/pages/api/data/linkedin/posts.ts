@@ -27,7 +27,7 @@ export default async function handler(
     }
 
     // Fetch LinkedIn access token directly from database
-    console.log("🔍 Fetching LinkedIn access token from database for posts...");
+    console.log("Fetching LinkedIn access token from database for posts...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     

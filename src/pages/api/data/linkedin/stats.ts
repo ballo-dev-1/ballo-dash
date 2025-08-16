@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Fetch LinkedIn access token directly from database
-    console.log("🔍 Fetching LinkedIn access token from database for stats...");
+    console.log("Fetching LinkedIn access token from database for stats...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     

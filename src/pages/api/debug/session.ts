@@ -28,7 +28,7 @@ export default async function handler(
       }
     };
 
-    // console.log("🔍 Debug Session API - Current session for user:", session.user.email);
+    // console.log("Debug Session API - Current session for user:", session.user.email);
     // console.log("   Session data:", JSON.stringify(safeSession, null, 2));
 
     res.status(200).json({

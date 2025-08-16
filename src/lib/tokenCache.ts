@@ -34,12 +34,12 @@ class TokenCacheService {
     const cached = this.cache.get(cacheKey);
 
     if (!cached) {
-      console.log(`🔍 TokenCache: No cached token for ${integrationType} (${companyId})`);
+      console.log(`TokenCache: No cached token for ${integrationType} (${companyId})`);
       return null;
     }
 
     if (Date.now() > cached.expiresAt) {
-      console.log(`🔍 TokenCache: Cached token for ${integrationType} (${companyId}) has expired`);
+      console.log(`TokenCache: Cached token for ${integrationType} (${companyId}) has expired`);
       this.cache.delete(cacheKey);
       return null;
     }

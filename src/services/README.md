@@ -92,7 +92,7 @@ metaService.clearPageCache('facebook', pageId);
 ## 🐛 **Debugging**
 
 All services include comprehensive logging:
-- 🔍 Cache hits/misses
+- Cache hits/misses
 - ⏳ Request progress tracking
 - ❌ Error details
 - 📊 Performance metrics

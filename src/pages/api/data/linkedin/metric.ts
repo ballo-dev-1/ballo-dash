@@ -39,7 +39,7 @@ export default async function handler(
     }
 
     // Fetch LinkedIn access token directly from database
-    console.log("🔍 Fetching LinkedIn access token from database...");
+    console.log("Fetching LinkedIn access token from database...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     
@@ -61,7 +61,7 @@ export default async function handler(
     console.log("✅ LinkedIn access token is available");
 
     // Log the request details for inspection
-    console.log("🔍 LinkedIn API Request Details:");
+    console.log("LinkedIn API Request Details:");
     console.log("   Organization ID:", organizationId);
     console.log("   Metric:", metric);
     console.log("   Since:", since);

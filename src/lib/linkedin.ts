@@ -16,7 +16,7 @@ export async function getLinkedInAccessToken(companyId: string): Promise<string 
       return cachedToken;
     }
 
-    console.log("🔍 Fetching LinkedIn access token from database for company:", companyId);
+    console.log("Fetching LinkedIn access token from database for company:", companyId);
     
     const linkedInIntegration = await db
       .select()

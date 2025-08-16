@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // console.log("🔍 Facebook Stats API - Session verification for user:", session.user.email);
+    // console.log("Facebook Stats API - Session verification for user:", session.user.email);
     // console.log("   User ID:", session.user.id);
     // console.log("   Company ID:", session.user.companyId);
     // console.log("   Available access tokens:", Object.keys(session.user.accessTokens || {}));
@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Fetch Facebook access token directly from database
-    console.log("🔍 Fetching Facebook access token from database for stats...");
+    console.log("Fetching Facebook access token from database for stats...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     

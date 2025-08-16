@@ -29,7 +29,7 @@ import companyReducer from "./Company/reducer";
 import userReducer from "./User/reducer";
 
 // integrations
-import integrationReducer from "./Integrations/reducer";
+import integrationsReducer from "./Integrations/reducer";
 
 import marketingPlansReducer from "./Marketing Plans/reducer";
 
@@ -47,7 +47,7 @@ const rootReducer = combineReducers({
   company: companyReducer,
   user: userReducer,
   marketingPlans: marketingPlansReducer,
-  integration: integrationReducer,
+  integrations: integrationsReducer,
   meta: metaReducer,
   linkedin: linkedInReducer,
 });

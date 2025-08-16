@@ -42,12 +42,12 @@ class MetaService {
     const cacheKey = `pageInfo_${platform}_${pageId}`;
     
     if (this.pageInfo[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log('🔍 MetaService: Returning cached page info');
+      console.log('MetaService: Returning cached page info');
       return this.pageInfo[cacheKey];
     }
 
     if (this.isLoading[cacheKey]) {
-      console.log('🔍 MetaService: Page info request already in progress, waiting...');
+      console.log('MetaService: Page info request already in progress, waiting...');
       while (this.isLoading[cacheKey]) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -55,7 +55,7 @@ class MetaService {
     }
 
     try {
-      console.log('🔍 MetaService: Fetching page info...');
+      console.log('MetaService: Fetching page info...');
       this.isLoading[cacheKey] = true;
       
       const response = await fetch(`/api/data/meta/pageInfo?pageId=${pageId}&platform=${platform}`);
@@ -68,7 +68,7 @@ class MetaService {
       this.pageInfo[cacheKey] = data;
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('🔍 MetaService: Page info stored in cache');
+      console.log('MetaService: Page info stored in cache');
       return this.pageInfo[cacheKey];
     } catch (error) {
       console.error('❌ MetaService: Error fetching page info:', error);
@@ -82,12 +82,12 @@ class MetaService {
     const cacheKey = `posts_${platform}_${pageId}`;
     
     if (this.posts[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log('🔍 MetaService: Returning cached posts');
+      console.log('MetaService: Returning cached posts');
       return this.posts[cacheKey];
     }
 
     if (this.isLoading[cacheKey]) {
-      console.log('🔍 MetaService: Posts request already in progress, waiting...');
+      console.log('MetaService: Posts request already in progress, waiting...');
       while (this.isLoading[cacheKey]) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -95,7 +95,7 @@ class MetaService {
     }
 
     try {
-      console.log('🔍 MetaService: Fetching posts...');
+      console.log('MetaService: Fetching posts...');
       this.isLoading[cacheKey] = true;
       
       const response = await fetch(`/api/data/meta/posts?pageId=${pageId}&platform=${platform}`);
@@ -108,7 +108,7 @@ class MetaService {
       this.posts[cacheKey] = data.posts || [];
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('🔍 MetaService: Posts stored in cache');
+      console.log('MetaService: Posts stored in cache');
       return this.posts[cacheKey];
     } catch (error) {
       console.error('❌ MetaService: Error fetching posts:', error);
@@ -122,12 +122,12 @@ class MetaService {
     const cacheKey = `metrics_${platform}_${pageId}_${metric}`;
     
     if (this.metrics[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log(`🔍 MetaService: Returning cached ${metric} metrics`);
+      console.log(`MetaService: Returning cached ${metric} metrics`);
       return this.metrics[cacheKey];
     }
 
     try {
-      console.log(`🔍 MetaService: Fetching ${metric} metrics...`);
+      console.log(`MetaService: Fetching ${metric} metrics...`);
       
       const response = await fetch(`/api/data/meta/metric?pageId=${pageId}&metric=${metric}&platform=${platform}`);
       
@@ -139,7 +139,7 @@ class MetaService {
       this.metrics[cacheKey] = data;
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log(`🔍 MetaService: ${metric} metrics stored in cache`);
+      console.log(`MetaService: ${metric} metrics stored in cache`);
       return this.metrics[cacheKey];
     } catch (error) {
       console.error(`❌ MetaService: Error fetching ${metric} metrics:`, error);
@@ -148,7 +148,7 @@ class MetaService {
   }
 
   public async getMultipleMetrics(pageId: string, metrics: string[], platform: string = 'facebook'): Promise<Record<string, MetaMetrics>> {
-    console.log(`🔍 MetaService: Fetching multiple metrics: ${metrics.join(', ')}`);
+    console.log(`MetaService: Fetching multiple metrics: ${metrics.join(', ')}`);
     
     const results: Record<string, MetaMetrics> = {};
     
@@ -169,12 +169,12 @@ class MetaService {
     const cacheKey = `stats_${platform}_${pageId}`;
     
     if (this.isDataFresh(cacheKey)) {
-      console.log('🔍 MetaService: Returning cached stats');
+      console.log('MetaService: Returning cached stats');
       return null; // Stats are usually not cached for long
     }
 
     try {
-      console.log('🔍 MetaService: Fetching stats...');
+      console.log('MetaService: Fetching stats...');
       
       const response = await fetch(`/api/data/meta/stats?pageId=${pageId}&platform=${platform}`);
       
@@ -185,7 +185,7 @@ class MetaService {
       const data = await response.json();
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('🔍 MetaService: Stats fetched successfully');
+      console.log('MetaService: Stats fetched successfully');
       return data;
     } catch (error) {
       console.error('❌ MetaService: Error fetching stats:', error);

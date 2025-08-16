@@ -96,23 +96,29 @@ export const fetchLinkedInStats = createAsyncThunk<
     console.log("📋 Parameters:", { organizationId, platform, since, until, datePreset });
     
     let state = getState();
-    console.log("🔍 Current Redux state - integrations count:", state.integration.items.length);
-    console.log("🔍 Current Redux state - integration status:", state.integration.status);
+    console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
+    console.log("Current Redux state - integration status:", state.integrations.loading);
 
-    if (state.integration.items.length === 0 && state.integration.status !== "loading") {
-      console.log("🔍 No integrations in state, fetching integrations...");
-      await dispatch(fetchIntegrations());
-      state = getState();
-      console.log("🔍 After fetching integrations - count:", state.integration.items.length);
+    if (state.integrations.integrations.length === 0 && state.integrations.loading !== true) {
+      console.log("No integrations in state, fetching integrations...");
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+        console.log("After fetching integrations - count:", state.integrations.integrations.length);
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
-    const integration = state.integration.items.find(
+    const integration = state.integrations.integrations.find(
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 
     if (!integration) {
       console.error("❌ No LinkedIn integration found in Redux state");
-      console.log("🔍 Available integrations:", state.integration.items.map((i: any) => ({ type: i.type, status: i.status })));
+      console.log("Available integrations:", state.integrations.integrations.map((i: any) => ({ type: i.type, status: i.status })));
       console.log("=".repeat(60));
       throw new Error("No LinkedIn integration found");
     }
@@ -187,12 +193,18 @@ export const fetchLinkedInPosts = createAsyncThunk<
   async ({ organizationId, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
     let state = getState();
 
-    if (state.integration.items.length === 0 && state.integration.status !== "loading") {
-      await dispatch(fetchIntegrations());
-      state = getState();
+    if (state.integrations.integrations.length === 0 && state.integrations.loading !== true) {
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
-    const integration = state.integration.items.find(
+    const integration = state.integrations.integrations.find(
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 
@@ -226,33 +238,39 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
     let state = getState();
 
     // Wait for integrations to be loaded if they're not already
-    if (state.integration.items.length === 0 && state.integration.status !== "loading") {
-      await dispatch(fetchIntegrations());
-      state = getState();
+    if (state.integrations.integrations.length === 0 && state.integrations.loading !== true) {
+      const companyId = state.company?.id;
+      if (companyId) {
+        await dispatch(fetchIntegrations(companyId));
+        state = getState();
+      } else {
+        console.error("❌ No company ID found in state");
+        throw new Error("Company ID not found");
+      }
     }
 
     // Wait for integrations to finish loading if they're currently loading
-    if (state.integration.status === "loading") {
+    if (state.integrations.loading === true) {
       console.log("⏳ Waiting for integrations to finish loading...");
       // Wait for the integration status to change from loading
-      while (state.integration.status === "loading") {
+      while (state.integrations.loading === true) {
         await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
         state = getState();
       }
     }
 
     // Check if integrations loaded successfully
-    if (state.integration.status === "failed") {
-      console.error("❌ Failed to load integrations:", state.integration.error);
+    if (state.integrations.error) {
+      console.error("❌ Failed to load integrations:", state.integrations.error);
       throw new Error("Failed to load integrations");
     }
 
-    if (state.integration.items.length === 0) {
+    if (state.integrations.integrations.length === 0) {
       console.error("❌ No integrations found after loading");
       throw new Error("No integrations found");
     }
 
-    const integration = state.integration.items.find(
+    const integration = state.integrations.integrations.find(
       (integration: { type: string }) => integration.type === platform.toUpperCase()
     );
 

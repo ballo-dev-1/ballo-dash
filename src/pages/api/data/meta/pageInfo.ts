@@ -30,7 +30,7 @@ export default async function handler(
     }
 
     // Fetch Facebook access token directly from database
-    console.log("🔍 Fetching Facebook access token from database for page info...");
+    console.log("Fetching Facebook access token from database for page info...");
     console.log("   User Email:", session.user.email);
     console.log("   Company ID:", companyId);
     console.log("   Platform:", platform);

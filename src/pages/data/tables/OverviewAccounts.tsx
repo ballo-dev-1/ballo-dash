@@ -199,7 +199,7 @@ const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
 
 // New function to transform progressive LinkedIn data
 const transformProgressiveLinkedInData = (progressiveData: any): PlatformOverview | null => {
-  console.log("🔍 transformProgressiveLinkedInData called with:", progressiveData);
+  console.log("transformProgressiveLinkedInData called with:", progressiveData);
   
   if (!progressiveData) {
     console.log("❌ No progressive data provided");
@@ -222,9 +222,9 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
 
   // Helper function to get metric value with loading state
   const getMetricValue = (metricName: string, defaultValue: any = "-") => {
-    console.log(`   🔍 Getting metric value for: ${metricName}`);
-    console.log(`   🔍 Loading metrics:`, loadingMetrics);
-    console.log(`   🔍 Is ${metricName} in loadingMetrics?`, loadingMetrics?.includes(metricName));
+    console.log(`   Getting metric value for: ${metricName}`);
+    console.log(`   Loading metrics:`, loadingMetrics);
+    console.log(`   Is ${metricName} in loadingMetrics?`, loadingMetrics?.includes(metricName));
     
     if (loadingMetrics?.includes(metricName)) {
       console.log(`   ⏳ ${metricName} is still loading`);

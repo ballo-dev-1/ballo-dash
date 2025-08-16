@@ -8,6 +8,9 @@ $googleFontsUrl: "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;
 @import "../fonts/fontawesome.css";
 @import "../fonts/material.css";
 
+// Component-specific styles
+@import "./components";
+
 // Define a variable for the Google Fonts URL
 
 // Import the Google Fonts using the @import directive

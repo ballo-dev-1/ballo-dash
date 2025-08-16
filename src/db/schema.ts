@@ -99,7 +99,9 @@ export const integrations = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     type: integrationTypeEnum("type").notNull(),
-    status: integrationStatusEnum("status").default("CONNECTED").notNull(),
+    status: integrationStatusEnum("status").default("PENDING").notNull(),
+    appId: text("app_id"),
+    appSecret: text("app_secret"),
     accessToken: text("access_token").notNull(),
     refreshToken: text("refresh_token"),
     expiresAt: timestamp("expires_at"),
@@ -153,7 +155,9 @@ export const users = pgTable(
   })
 );
 
-// 6. MARKETING PLANS TABLE
+
+
+// 7. MARKETING PLANS TABLE
 export const marketingPlans = pgTable(
   "marketing_plans",
   {
