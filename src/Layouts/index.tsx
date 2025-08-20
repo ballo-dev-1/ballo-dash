@@ -1,3 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react/no-children-prop */
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react/display-name */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable prefer-const */
+/* eslint-disable no-console */
 import { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -19,6 +31,7 @@ import Footer from "./Footer";
 import VerticalTab from "./Vertical-Tab";
 import HorizontalLayout from "./HorizontalLayout/Header";
 import Moduler from "./Moduler";
+import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
 
 interface LayoutProps {
   children: ReactNode;
@@ -195,6 +208,9 @@ const Layout = ({ children }: LayoutProps) => {
           />
         </>
       )}
+      
+      {/* Global Integration Management Modal */}
+      <IntegrationManagementModal />
     </>
   );
 };

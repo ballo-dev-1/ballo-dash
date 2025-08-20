@@ -1,80 +1,24 @@
 // src/Common/AppInitializer.tsx
+
 import { useEffect } from "react";
-import { useAppDispatch } from "@/toolkit/hooks";
-import { useSelector } from "react-redux";
-import { RootState } from "@/toolkit";
-import { fetchCompany } from "@/toolkit/Company/reducer";
-import { fetchMetaPosts, fetchMetaStats } from "@/toolkit/metaData/reducer";
+import { useAppContext } from "@/contexts/AppContext";
+import { companyService, userService } from "@/services";
 
 const AppInitializer = () => {
-  const dispatch = useAppDispatch();
+  const { company, user } = useAppContext();
+  
 
-  const stats = useSelector((state: RootState) => state.meta.stats) || {};
-  const posts = useSelector((state: RootState) => state.meta.posts);
-  const company = useSelector((state: RootState) => state.company.data);
 
+  // One-time initialization on mount
   useEffect(() => {
-    console.log(stats);
-  }, [stats]);
+    // Initialize company and user services
+    
+  }, [company, user]);
 
-  // Initial fetch
-  useEffect(() => {
-    if (!company) dispatch(fetchCompany());
+  // No more Redux polling - services handle their own caching
+  console.log('AppInitializer: No polling needed - services handle caching automatically');
 
-    if (!posts) {
-      dispatch(
-        fetchMetaPosts({
-          pageId: "me",
-          platform: "FACEBOOK",
-          since: " ",
-          until: " ",
-          datePreset: " ",
-        })
-      );
-    }
-
-    if (!Object.keys(stats).length) {
-      console.log("Stats", stats);
-      dispatch(
-        fetchMetaStats({
-          pageId: "me",
-          platform: "FACEBOOK",
-          since: " ",
-          until: " ",
-          datePreset: " ",
-        })
-      );
-    }
-  }, [dispatch]);
-
-  // Polling every 5 mins
-  useEffect(() => {
-    const interval = setInterval(() => {
-      dispatch(fetchCompany());
-      dispatch(
-        fetchMetaPosts({
-          pageId: "me",
-          platform: "FACEBOOK",
-          since: " ",
-          until: " ",
-          datePreset: " ",
-        })
-      );
-      dispatch(
-        fetchMetaStats({
-          pageId: "me",
-          platform: "FACEBOOK",
-          since: " ",
-          until: " ",
-          datePreset: " ",
-        })
-      );
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(interval);
-  }, [dispatch]);
-
-  return null;
+  return null; // This component only runs side effects
 };
 
 export default AppInitializer;

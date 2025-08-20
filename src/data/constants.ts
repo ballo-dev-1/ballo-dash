@@ -19,6 +19,8 @@ export const integrationTypes = {
 
 export const integrationStatus = {
   connected: "CONNECTED",
+  disconnected: "DISCONNECTED",
+  pending: "PENDING",
   expired: "EXPIRED",
   error: "ERROR",
 };

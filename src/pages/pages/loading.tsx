@@ -6,9 +6,9 @@ import "@/assets/scss/loading.scss";
 import logo from "@/assets/images/logos/Ballo logo new-06.png";
 import Image from "next/image";
 
-const Loading = () => {
+const Loading = ({subContainer}: {subContainer: boolean}) => {
   return (
-    <div className="loader-container position-relative">
+    <div className={`loader-container position-relative ${subContainer ? 'sub-container' : ''}`}>
       <Image
         src={logo}
         className="center-item"

@@ -1,4 +1,4 @@
-import UpdateIntegrationModal from "@/views/Dashboard/UpdateIntegrations";
+// import UpdateIntegrationModal from "@/views/Dashboard/UpdateIntegrations";
 import Head from "next/head";
 import Link from "next/link";
 import React from "react";
@@ -41,7 +41,7 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
             <Col md={12}>
               <div className="page-header-title d-flex gap-3 align-items-center">
                 <h2 className="mb-0">{subTitle}</h2>
-                <UpdateIntegrationModal />
+                {/* <UpdateIntegrationModal /> */}
               </div>
             </Col>
           </Row>

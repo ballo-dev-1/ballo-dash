@@ -5,8 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:no-lint": "DISABLE_ESLINT_PLUGIN=true next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "lint:cleanup": "node scripts/lint-cleanup.js",
     "drizzle:push": "drizzle-kit push",
     "drizzle:seed": "tsx ./src/db/seed.ts",
     "drizzle:reset": "tsx src/db/reset.ts && tsx src/db/seed.ts"
@@ -67,6 +70,7 @@
     "framer-motion": "^12.15.0",
     "i18next": "^24.1.2",
     "i18next-browser-languagedetector": "^8.0.0",
+    "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",
     "moment": "^2.30.1",

@@ -1,0 +1,14 @@
+{
+  "version": "5",
+  "dialect": "postgresql",
+  "id": "0001_add_integration_statuses",
+  "prevId": "0000_organic_iron_man",
+  "tables": {},
+  "enums": {
+    "integration_status": {
+      "name": "integration_status",
+      "schema": "public",
+      "values": ["CONNECTED", "DISCONNECTED", "PENDING", "EXPIRED", "ERROR"]
+    }
+  }
+}

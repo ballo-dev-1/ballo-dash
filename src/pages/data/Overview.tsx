@@ -2,15 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import OverviewAccounts from "./tables/OverviewAccounts";
 import OverviewAudience from "./tables/OverviewAudience";
-import { useSelector } from "react-redux";
 import { selectMetaStats } from "@/toolkit/metaData/reducer";
+import { useSelector } from "react-redux";
+import { selectLinkedInStats } from "@/toolkit/linkedInData/reducer";
+import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
+import NoIntegrations from "@/components/NoIntegrations";
+import { useIntegrations } from "@/hooks/useIntegrations";
+import { useAutoDataRefresh } from "@/hooks/useAutoDataRefresh";
 
 const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
-
-  useEffect(() => {
-    console.log("metastats:", metaStats);
-  }, [metaStats]);
+  const linkedInStats = useSelector(selectLinkedInStats) || {};
+  const { loading } = useIntegrations();
+  
+  // Auto-refresh data for CONNECTED integrations when component mounts
+  useAutoDataRefresh();
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
@@ -26,13 +32,25 @@ const Overview = () => {
   const tableKey1 = 1;
   const tableKey2 = 2;
 
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+
+
   return (
     <div>
-      <h3 className="my-4 mx-2 text-center">Overview</h3>
       <Row>
         <Col md={expandedCols[tableKey1] ? 12 : 6}>
           <OverviewAccounts
             meta={metaStats}
+            linkedInData={linkedInStats}
             isExpanded={!!expandedCols[tableKey1]}
             onToggleExpand={() => toggleExpand(tableKey1)}
           />
@@ -40,6 +58,7 @@ const Overview = () => {
         <Col md={expandedCols[tableKey2] ? 12 : 6}>
           <OverviewAudience
             meta={metaStats}
+            linkedInData={linkedInStats}
             isExpanded={!!expandedCols[tableKey2]}
             onToggleExpand={() => toggleExpand(tableKey2)}
           />

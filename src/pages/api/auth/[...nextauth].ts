@@ -4,7 +4,6 @@ import { db } from "@/db/db"; // your Drizzle db client
 import { users } from "@/db/schema"; // your user table schema
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-import type { JWT } from "next-auth/jwt";
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -37,6 +36,7 @@ export const authOptions: AuthOptions = {
           name: `${user.firstName} ${user.lastName}`,
           email: user.email,
           role: user.role,
+          companyId: user.companyId,
         };
       },
     }),
@@ -50,18 +50,23 @@ export const authOptions: AuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      // Attach user.id and role to token on initial sign-in
+      // Attach user.id, role, and companyId to token on initial sign-in
       if (user) {
         token.id = user.id;
         token.role = user.role;
-      }
-      return token;  // Return updated token
+        token.companyId = user.companyId;
+      } 
+      
+      // No more token fetching - tokens are now fetched directly from database when needed
+      return token;
     },
     async session({ session, token }) {
       // Add custom fields to session.user
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.companyId = token.companyId as string;
+        // No more accessTokens - tokens are fetched directly from database when needed
       }
       return session;  // Return updated session
     },

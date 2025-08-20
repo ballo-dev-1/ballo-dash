@@ -2,9 +2,21 @@ import { useEffect, useState } from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { 
+  selectProgressiveMetaStats, 
+  selectProgressiveMetaStatus,
+  selectProgressiveMetaError 
+} from "@/toolkit/metaData/reducer";
+import { 
+  selectProgressiveLinkedInStats, 
+  selectProgressiveLinkedInStatus,
+  selectProgressiveLinkedInError 
+} from "@/toolkit/linkedInData/reducer";
 
 interface OverviewAccountsProps {
   meta: any; // Replace `any` with a proper type if you know the shape of `meta`
+  linkedInData?: any; // Add LinkedIn data prop
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -12,24 +24,25 @@ interface OverviewAccountsProps {
 interface PlatformOverview {
   platform: string;
   pageName?: string;
-  page_fans?: number;
-  page_follows?: number;
-  "Reach (day)"?: number;
-  "Reach (week)"?: number;
-  "Reach (month)"?: number;
-  "Engagement (day)"?: number;
-  "Engagement (week)"?: number;
-  "Engagement (month)"?: number;
-  "CTA Clicks (day)"?: number;
-  "CTA Clicks (week)"?: number;
-  "CTA Clicks (month)"?: number;
-  engagement?: number;
-  Clicks?: number;
+  page_fans?: number | string;
+  page_follows?: number | string;
+  "Reach (day)"?: number | string;
+  "Reach (week)"?: number | string;
+  "Reach (month)"?: number | string;
+  "Engagement (day)"?: number | string;
+  "Engagement (week)"?: number | string;
+  "Engagement (month)"?: number | string;
+  "CTA Clicks (day)"?: number | string;
+  "CTA Clicks (week)"?: number | string;
+  "CTA Clicks (month)"?: number | string;
+  engagement?: number | string;
+  Clicks?: number | string;
   last_post_date?: Date | string;
 }
 
 const transformMetaData = (meta: any): PlatformOverview | null => {
   if (!meta) return null;
+  // console.log("Meta data:", meta);
 
   const { platform = "-", pageInfo, metrics = {}, recentPost = "-" } = meta;
 
@@ -99,22 +112,250 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
   };
 };
 
+// New function to transform progressive data
+const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
+  if (!progressiveData) return null;
+
+  const { pageInfo, metrics, recentPost, loadingMetrics } = progressiveData;
+
+  const pageName = pageInfo?.name ?? "-";
+
+  // Helper function to get metric value with loading state
+  const getMetricValue = (metricName: string, period: string, defaultValue: any = "-") => {
+    if (loadingMetrics?.includes(metricName)) {
+      return "Loading...";
+    }
+    
+    const metricData = metrics[metricName];
+    if (!metricData || !metricData[period]) {
+      return defaultValue;
+    }
+    
+    const values = metricData[period].values;
+    return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
+  };
+
+  // Helper function to format recent post date
+  const getRecentPostDate = () => {
+    if (!recentPost?.data?.[0]?.created_time) return "-";
+    
+    const rawDate = recentPost.data[0].created_time;
+    const isoDateStr = rawDate.replace("+0000", "Z");
+    const parsedDate = new Date(isoDateStr);
+    
+    return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
+  };
+
+  return {
+    platform: progressiveData.platform || "Facebook",
+    pageName,
+    page_fans: getMetricValue("page_fans", "day"),
+    page_follows: getMetricValue("page_follows", "lifetime"),
+    "Reach (day)": getMetricValue("page_impressions", "day"),
+    "Reach (week)": getMetricValue("page_impressions", "week"),
+    "Reach (month)": getMetricValue("page_impressions", "days_28"),
+    "Engagement (day)": getMetricValue("page_post_engagements", "day"),
+    "Engagement (week)": getMetricValue("page_post_engagements", "week"),
+    "Engagement (month)": getMetricValue("page_post_engagements", "days_28"),
+    "CTA Clicks (day)": getMetricValue("page_total_actions", "day"),
+    "CTA Clicks (week)": getMetricValue("page_total_actions", "week"),
+    "CTA Clicks (month)": getMetricValue("page_total_actions", "days_28"),
+    engagement: getMetricValue("page_impressions", "days_28"),
+    last_post_date: getRecentPostDate(),
+  };
+};
+
+const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
+  if (!linkedInData || Object.keys(linkedInData).length === 0) {
+    return null;
+  }
+
+  // Helper function to format numbers
+  const formatNumber = (num: number | null | undefined): string | number => {
+    if (num === null || num === undefined || num === 0) return "-";
+    return num.toLocaleString();
+  };
+
+  const result = {
+    platform: "LinkedIn",
+    pageName: linkedInData.organizationName || "Company Page", // Use actual company name
+    page_fans: formatNumber(linkedInData.followers),
+    page_follows: formatNumber(linkedInData.followers),
+    "Reach (day)": formatNumber(linkedInData.impressionCount),
+    "Reach (week)": formatNumber(linkedInData.impressionCount), // LinkedIn doesn't provide weekly breakdown
+    "Reach (month)": formatNumber(linkedInData.impressionCount),
+    "Engagement (day)": formatNumber(linkedInData.engagement),
+    "Engagement (week)": formatNumber(linkedInData.engagement),
+    "Engagement (month)": formatNumber(linkedInData.engagement),
+    "CTA Clicks (day)": formatNumber(linkedInData.clickCount),
+    "CTA Clicks (week)": formatNumber(linkedInData.clickCount),
+    "CTA Clicks (month)": formatNumber(linkedInData.clickCount),
+    engagement: formatNumber(linkedInData.engagement),
+    last_post_date: "-", // LinkedIn posts are fetched separately
+  };
+
+  return result;
+};
+
+// New function to transform progressive LinkedIn data
+const transformProgressiveLinkedInData = (progressiveData: any): PlatformOverview | null => {
+  console.log("transformProgressiveLinkedInData called with:", progressiveData);
+  
+  if (!progressiveData) {
+    console.log("❌ No progressive data provided");
+    return null;
+  }
+
+  const { organizationName, followers, impressionCount, clickCount, engagement, loadingMetrics, completedMetrics } = progressiveData;
+  
+  console.log("📊 Progressive data breakdown:");
+  console.log("   organizationName:", organizationName);
+  console.log("   followers:", followers);
+  console.log("   impressionCount:", impressionCount);
+  console.log("   clickCount:", clickCount);
+  console.log("   engagement:", engagement);
+  console.log("   loadingMetrics:", loadingMetrics);
+  console.log("   completedMetrics:", completedMetrics);
+
+  const pageName = organizationName || "Company Page";
+  console.log("   pageName:", pageName);
+
+  // Helper function to get metric value with loading state
+  const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+    console.log(`   Getting metric value for: ${metricName}`);
+    console.log(`   Loading metrics:`, loadingMetrics);
+    console.log(`   Is ${metricName} in loadingMetrics?`, loadingMetrics?.includes(metricName));
+    
+    if (loadingMetrics?.includes(metricName)) {
+      console.log(`   ⏳ ${metricName} is still loading`);
+      return "Loading...";
+    }
+    
+    let value;
+    switch (metricName) {
+      case "followers":
+        value = followers || defaultValue;
+        console.log(`   📊 Followers value:`, value);
+        break;
+      case "impressions":
+        value = impressionCount || defaultValue;
+        console.log(`   📊 Impressions value:`, value);
+        break;
+      case "clicks":
+        value = clickCount || defaultValue;
+        console.log(`   📊 Clicks value:`, value);
+        break;
+      case "engagement":
+        value = engagement || defaultValue;
+        console.log(`   📊 Engagement value:`, value);
+        break;
+      default:
+        value = defaultValue;
+        console.log(`   📊 Default value for ${metricName}:`, value);
+    }
+    return value;
+  };
+
+  // Helper function to format numbers
+  const formatNumber = (num: number | null | undefined): string | number => {
+    if (num === null || num === undefined || num === 0) return "-";
+    return num.toLocaleString();
+  };
+
+  const result = {
+    platform: "LinkedIn",
+    pageName,
+    page_fans: formatNumber(getMetricValue("followers")),
+    page_follows: formatNumber(getMetricValue("followers")),
+    "Reach (day)": formatNumber(getMetricValue("impressions")),
+    "Reach (week)": formatNumber(getMetricValue("impressions")), // LinkedIn doesn't provide weekly breakdown
+    "Reach (month)": formatNumber(getMetricValue("impressions")),
+    "Engagement (day)": formatNumber(getMetricValue("engagement")),
+    "Engagement (week)": formatNumber(getMetricValue("engagement")),
+    "Engagement (month)": formatNumber(getMetricValue("engagement")),
+    "CTA Clicks (day)": formatNumber(getMetricValue("clicks")),
+    "CTA Clicks (week)": formatNumber(getMetricValue("clicks")),
+    "CTA Clicks (month)": formatNumber(getMetricValue("clicks")),
+    engagement: formatNumber(getMetricValue("engagement")),
+    last_post_date: "-", // LinkedIn posts are fetched separately
+  };
+  
+  console.log("✅ Final transformed LinkedIn data:", result);
+  return result;
+};
+
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   meta,
+  linkedInData,
   isExpanded,
   onToggleExpand,
 }) => {
+  // Get progressive data from Redux
+  const progressiveData = useSelector(selectProgressiveMetaStats);
+  const progressiveStatus = useSelector(selectProgressiveMetaStatus);
+  const progressiveError = useSelector(selectProgressiveMetaError);
+  
+  const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
+  const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
+  const progressiveLinkedInError = useSelector(selectProgressiveLinkedInError);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("=== OverviewAccounts Debug ===");
+    console.log("progressiveData:", progressiveData);
+    console.log("progressiveStatus:", progressiveStatus);
+    console.log("progressiveError:", progressiveError);
+    console.log("progressiveLinkedInData:", progressiveLinkedInData);
+    console.log("progressiveLinkedInStatus:", progressiveLinkedInStatus);
+    console.log("progressiveLinkedInError:", progressiveLinkedInError);
+    console.log("meta:", meta);
+    console.log("linkedInData:", linkedInData);
+    
+    // Add more detailed logging
+    console.log("meta keys:", Object.keys(meta));
+    console.log("linkedInData keys:", Object.keys(linkedInData));
+    console.log("meta values:", meta);
+    console.log("linkedInData values:", linkedInData);
+    
+    // Check if data is being transformed
+    const transformed = progressiveData 
+      ? transformProgressiveMetaData(progressiveData)
+      : transformMetaData(meta);
+    console.log("transformed Facebook data:", transformed);
+    
+    const transformedLinkedIn = progressiveLinkedInData 
+      ? transformProgressiveLinkedInData(progressiveLinkedInData)
+      : transformLinkedInData(linkedInData);
+    console.log("transformed LinkedIn data:", transformedLinkedIn);
+    
+    console.log("=== End OverviewAccounts Debug ===");
+  }, [progressiveData, progressiveStatus, progressiveError, progressiveLinkedInData, progressiveLinkedInStatus, progressiveLinkedInError, meta, linkedInData]);
+
   const [reachHeader, setReachHeader] = useState("Reach (week)");
   const [engagementHeader, setEngagementHeader] =
     useState("Engagement (month)");
   const [CTAClicksHeader, setCTAClicksHeader] = useState("CTA Clicks (month)");
   const facebookData: PlatformOverview[] = [];
+  const linkedinDataArray: PlatformOverview[] = [];
 
-  const transformed = transformMetaData(meta);
-  if (meta?.metrics && transformed) {
+  // Use progressive Facebook data if available, otherwise fall back to regular meta data
+  const transformed = progressiveData 
+    ? transformProgressiveMetaData(progressiveData)
+    : transformMetaData(meta);
+    
+  if (transformed) {
     facebookData.push(transformed);
   }
-  const linkedinData: { linkedinData: any }[] = [];
+
+  // Use progressive LinkedIn data if available, otherwise fall back to regular LinkedIn data
+  const transformedLinkedIn = progressiveLinkedInData 
+    ? transformProgressiveLinkedInData(progressiveLinkedInData)
+    : transformLinkedInData(linkedInData);
+    
+  if (transformedLinkedIn) {
+    linkedinDataArray.push(transformedLinkedIn);
+  }
+
   const instagramData: { instagramData: any }[] = [];
   const xData: { xData: any }[] = [];
   const tiktokData: { tiktokData: any }[] = [];
@@ -124,7 +365,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
 
   const data = [
     ...facebookData,
-    ...linkedinData,
+    ...linkedinDataArray,
     ...instagramData,
     ...xData,
     ...tiktokData,
@@ -180,6 +421,10 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     },
   ];
 
+  // Determine loading state
+  const isLoading = progressiveStatus === "loading" || progressiveLinkedInStatus === "loading" || 
+                   (!progressiveData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+
   return (
     <Row>
       <Col xl={12}>
@@ -202,7 +447,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
                 isBordered={false}
                 customPageSize={5}
                 isPagination={true}
-                loading={!meta?.metrics}
+                loading={isLoading}
               />
             </div>
           </Card.Body>
