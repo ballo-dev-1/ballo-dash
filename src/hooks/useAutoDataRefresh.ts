@@ -1,19 +1,24 @@
 // src/hooks/useAutoDataRefresh.ts
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/toolkit';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
 import { fetchMetaStats } from '@/toolkit/metaData/reducer';
 import { useSelector } from 'react-redux';
 import { selectIntegrations } from '@/toolkit/Integrations/reducer';
+import { useIntegrations } from './useIntegrations';
 
 export const useAutoDataRefresh = () => {
   const dispatch = useDispatch<AppDispatch>();
   const integrations = useSelector(selectIntegrations);
-
+  const { isInitialized } = useIntegrations();
+  const hasRefreshed = useRef(false); // Prevent multiple refreshes
+  const refreshCount = useRef(0); // Track refresh attempts
+  
   const refreshDataForIntegration = useCallback(async (integration: any) => {
     try {
-      console.log(`🔄 useAutoDataRefresh: Refreshing data for ${integration.type} integration...`);
+      refreshCount.current++;
+      console.log(`🔄 Auto-refresh: ${integration.type} (attempt #${refreshCount.current})`);
       
       if (integration.type === 'LINKEDIN') {
         // For now, we'll use a default organization ID since we don't have social profiles set up yet
@@ -28,7 +33,7 @@ export const useAutoDataRefresh = () => {
           datePreset: 'last_30_days'
         })).unwrap();
         
-        console.log('✅ useAutoDataRefresh: LinkedIn data refreshed successfully');
+        console.log('✅ Auto-refresh: LinkedIn data refreshed successfully');
       } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
         // For now, we'll use a default page ID since we don't have social profiles set up yet
         // TODO: Get this from social profiles when they're properly configured
@@ -42,18 +47,17 @@ export const useAutoDataRefresh = () => {
           datePreset: 'last_30_days'
         })).unwrap();
         
-        console.log(`✅ useAutoDataRefresh: ${integration.type} data refreshed successfully`);
+        console.log(`✅ Auto-refresh: ${integration.type} data refreshed successfully`);
       } else {
-        console.log(`ℹ️ useAutoDataRefresh: Auto-refresh not implemented for platform: ${integration.type}`);
+        console.log(`ℹ️ Auto-refresh: Not implemented for platform: ${integration.type}`);
       }
     } catch (error) {
-      console.warn(`⚠️ useAutoDataRefresh: Refresh failed for ${integration.type}:`, error);
+      console.warn(`⚠️ Auto-refresh: Failed for ${integration.type}:`, error);
     }
   }, [dispatch]);
 
   const refreshAllConnectedIntegrations = useCallback(async () => {
     if (!integrations || integrations.length === 0) {
-      console.log('ℹ️ useAutoDataRefresh: No integrations available');
       return;
     }
 
@@ -64,11 +68,10 @@ export const useAutoDataRefresh = () => {
     );
 
     if (connectedIntegrations.length === 0) {
-      console.log('ℹ️ useAutoDataRefresh: No CONNECTED integrations found');
       return;
     }
 
-    console.log(`🚀 useAutoDataRefresh: Refreshing data for ${connectedIntegrations.length} CONNECTED integrations...`);
+    console.log(`🚀 Auto-refresh: Starting for ${connectedIntegrations.length} CONNECTED integrations`);
     
     // Refresh data for all CONNECTED integrations in parallel
     const refreshPromises = connectedIntegrations.map(refreshDataForIntegration);
@@ -78,22 +81,34 @@ export const useAutoDataRefresh = () => {
     results.forEach((result, index) => {
       const integration = connectedIntegrations[index];
       if (result.status === 'fulfilled') {
-        console.log(`✅ useAutoDataRefresh: Refresh completed for ${integration.type}`);
+        console.log(`✅ Auto-refresh: Completed for ${integration.type}`);
       } else {
-        console.warn(`⚠️ useAutoDataRefresh: Refresh failed for ${integration.type}:`, result.reason);
+        console.warn(`⚠️ Auto-refresh: Failed for ${integration.type}:`, result.reason);
       }
     });
     
-    console.log('🎯 useAutoDataRefresh: Refresh for all CONNECTED integrations completed');
+    console.log('🎯 Auto-refresh: All integrations completed');
   }, [integrations, refreshDataForIntegration]);
 
-  // Auto-refresh when component mounts and integrations are available
+  // Auto-refresh when component mounts and integrations are available AND initialized
   useEffect(() => {
-    if (integrations && integrations.length > 0) {
-      console.log('🔄 useAutoDataRefresh: Component mounted, checking for CONNECTED integrations...');
+    // Prevent multiple refreshes
+    if (hasRefreshed.current) {
+      return;
+    }
+
+    // Wait for integrations to be properly initialized and available
+    if (integrations && integrations.length > 0 && isInitialized) {
+      console.log('🚀 Auto-refresh: Starting auto-refresh process');
+      hasRefreshed.current = true;
       refreshAllConnectedIntegrations();
     }
-  }, [integrations, refreshAllConnectedIntegrations]);
+  }, [integrations, isInitialized, refreshAllConnectedIntegrations]);
+
+  // Reset refresh flag when integrations change significantly
+  useEffect(() => {
+    hasRefreshed.current = false;
+  }, [integrations?.length]);
 
   return {
     refreshDataForIntegration,

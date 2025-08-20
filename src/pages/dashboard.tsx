@@ -12,7 +12,6 @@ import SocialWidgets from "@views/Dashboard/SocialWidgets";
 
 import { selectCompany } from "@/toolkit/Company/reducer";
 import ZambianMap from "@/views/Dashboard/ZambianMap";
-import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
 import NoIntegrations from "@/components/NoIntegrations";
 import { useIntegrations } from "@/hooks/useIntegrations";
 import { useAutoDataRefresh } from "@/hooks/useAutoDataRefresh";
@@ -49,21 +48,6 @@ const Dashboard = () => {
   return (
     <>
       <BreadcrumbItem mainTitle="Dashboard" subTitle={company?.name} />
-      
-      {/* Integration Management Button */}
-      <div className="mb-3 d-flex justify-content-end">
-        <IntegrationManagementModal 
-          text="Manage Integrations"
-          onIntegrationCreated={() => {
-            // Refresh integrations to update the hasIntegrations state
-            window.location.reload();
-          }}
-          onIntegrationDeleted={() => {
-            // Refresh integrations to update the hasIntegrations state
-            window.location.reload();
-          }}
-        />
-      </div>
       
       <Row>
         <Widgets widgetData={widgetData} />

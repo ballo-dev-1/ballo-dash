@@ -1,20 +1,27 @@
-import React from 'react';
-import { Card, Button, Row, Col } from 'react-bootstrap';
-import { Plus, BarChart3, TrendingUp, PieChart, Unplug } from 'lucide-react';
-import Link from 'next/link';
-import IntegrationManagementModal from '@/views/Dashboard/IntegrationManagementModal';
+import React, { useEffect, useState } from 'react';
+import { Card, Row, Col, Button } from 'react-bootstrap';
+import { BarChart3, TrendingUp, PieChart, Unplug, Cable } from 'lucide-react';
+import { useIntegrationModal } from '@/hooks/useIntegrationModal';
 
 interface NoIntegrationsProps {
   variant?: 'dashboard' | 'data' | 'statistics' | 'charts';
-  showSetupButton?: boolean;
   className?: string;
 }
 
 const NoIntegrations: React.FC<NoIntegrationsProps> = ({ 
   variant = 'dashboard', 
-  showSetupButton = true,
   className = ''
 }) => {
+  const { openIntegrationModal } = useIntegrationModal();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(true);
+    }, 200); 
+    return () => clearTimeout(timer);
+  }, []);
+
   const getVariantContent = () => {
     switch (variant) {
       case 'dashboard':
@@ -30,7 +37,6 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
             'Generate comprehensive reports'
           ]
         };
-      
       case 'data':
         return {
           icon: <BarChart3 size={48} className="text-muted mb-3" />,
@@ -44,7 +50,6 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
             'Export capabilities'
           ]
         };
-      
       case 'statistics':
         return {
           icon: <TrendingUp size={48} className="text-muted mb-3" />,
@@ -58,7 +63,6 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
             'Audience demographics'
           ]
         };
-      
       case 'charts':
         return {
           icon: <PieChart size={48} className="text-muted mb-3" />,
@@ -72,7 +76,6 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
             'Custom dashboards'
           ]
         };
-      
       default:
         return {
           icon: <Unplug size={48} className="text-muted mb-3" />,
@@ -92,7 +95,13 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
   const content = getVariantContent();
 
   return (
-    <div className={`no-integrations-container ${className}`}>
+    <div 
+      className={`no-integrations-container ${className}`} 
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.5s ease-in-out'
+      }}
+    >
       <Card className="border-0 shadow-sm">
         <Card.Body className="text-center p-5">
           <div className="d-flex justify-content-center mb-4">
@@ -120,26 +129,16 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
             ))}
           </Row>
 
-          {showSetupButton && (
-            <div className="d-flex justify-content-center gap-3">
-                             <IntegrationManagementModal 
-                 text="Set Up Integrations" 
-                 onIntegrationCreated={() => {
-                   // Refresh the page to update integration state
-                   window.location.reload();
-                 }}
-                 onIntegrationDeleted={() => {
-                   // Refresh the page to update integration state
-                   window.location.reload();
-                 }}
-               />
-              {/*               
-                <Button variant="outline-secondary" size="lg">
-                  Learn More
-                </Button>
-               */}
-            </div>
-          )}
+          <div className="d-flex justify-content-center">
+            <Button
+              variant="primary"
+              onClick={() => openIntegrationModal('create')}
+              className="d-flex align-items-center gap-2"
+            >
+              <Cable size={32} />
+              <span className="ms-2">Set Up Integrations</span>
+            </Button>
+          </div> 
         </Card.Body>
       </Card>
     </div>

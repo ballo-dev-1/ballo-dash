@@ -19,6 +19,7 @@ import Footer from "./Footer";
 import VerticalTab from "./Vertical-Tab";
 import HorizontalLayout from "./HorizontalLayout/Header";
 import Moduler from "./Moduler";
+import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
 
 interface LayoutProps {
   children: ReactNode;
@@ -195,6 +196,9 @@ const Layout = ({ children }: LayoutProps) => {
           />
         </>
       )}
+      
+      {/* Global Integration Management Modal */}
+      <IntegrationManagementModal />
     </>
   );
 };

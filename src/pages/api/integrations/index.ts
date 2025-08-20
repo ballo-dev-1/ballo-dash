@@ -11,14 +11,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get user session to find company ID
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.email) {
+      console.log("❌ API: No session or user email found");
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     // Get company ID from session
     const companyId = session.user.companyId;
     if (!companyId) {
+      console.log("❌ API: No company ID found in session");
       return res.status(400).json({ error: "Company ID not found in session" });
     }
+
+    console.log("🔍 API: Processing request for company:", companyId);
 
     if (req.method === "POST") {
       // Create new integration
@@ -108,7 +112,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Use query parameter if provided, otherwise use session company ID
       const targetCompanyId = Array.isArray(queryCompanyId) ? queryCompanyId[0] : queryCompanyId || companyId;
 
-      console.log("Fetching integrations for company:", targetCompanyId);
+      console.log("🔍 API: Fetching integrations for company:", targetCompanyId);
+      console.log("🔍 API: Session company ID:", companyId);
+      console.log("🔍 API: Query company ID:", queryCompanyId);
 
       try {
         const result = await db
@@ -116,7 +122,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .from(integrations)
           .where(eq(integrations.companyId, targetCompanyId as string));
 
-        console.log("Found integrations:", result.length);
+        console.log("✅ API: Found integrations:", result.length);
+        console.log("🔍 API: Integration details:", result.map(i => ({
+          id: i.id,
+          type: i.type,
+          status: i.status,
+          companyId: i.companyId
+        })));
 
         // Return integrations without sensitive data
         const safeIntegrations = result.map(({ accessToken: _, refreshToken: __, appSecret: ___, ...safe }) => safe);

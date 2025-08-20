@@ -2,7 +2,7 @@ import { THEME_MODE } from "../Common/layoutConfig";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useRef, useState } from "react";
-import { Dropdown, DropdownToggle } from "react-bootstrap";
+import { Button, Dropdown, DropdownToggle } from "react-bootstrap";
 import { useDispatch } from "react-redux";
 import SimpleBar from "simplebar-react";
 import { chanageLanguage } from "src/toolkit/themeLayouts/thunk";
@@ -15,7 +15,8 @@ import avatar1 from "../assets/images/user/avatar-1.jpg";
 import avatar2 from "../assets/images/user/avatar-2.jpg";
 import avatar3 from "../assets/images/user/avatar-3.jpg";
 import i18n from "src/utils/i18n";
-import { UserRound } from "lucide-react";
+import { Cable, UserRound } from "lucide-react";
+import { useIntegrationModal } from "@/hooks/useIntegrationModal";
 
 interface HeaderProps {
   themeMode?: string; // Define the type for themeMode
@@ -32,7 +33,7 @@ const TopBar = ({
   toogleMobileSidebarHide,
 }: HeaderProps) => {
   const dispatch = useDispatch<any>();
-
+  const { openIntegrationModal } = useIntegrationModal();  
   const handleLanguageChange = (language: string) => {
     dispatch(chanageLanguage(language));
     i18n.changeLanguage(language);
@@ -308,6 +309,7 @@ const TopBar = ({
                   <i className="ph-duotone ph-bell"></i>
                   <span className="badge bg-success pc-h-badge">3</span>
                 </Dropdown.Toggle>
+                  {/* Integration Management Button */}
                 <Dropdown.Menu className="dropdown-notification dropdown-menu-end pc-h-dropdown">
                   <div className="dropdown-header d-flex align-items-center justify-content-between">
                     <h4 className="m-0">Notifications</h4>
@@ -585,15 +587,12 @@ const TopBar = ({
                   </Avatar>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="dropdown-user-profile dropdown-menu-end pc-h-dropdown">
-                  <div className="dropdown-header d-flex align-items-center justify-content-between">
-                    <h4 className="m-0">Profile</h4>
-                  </div>
                   <div className="dropdown-body">
                     <SimpleBar
                       className="profile-notification-scroll position-relative"
                       style={{ maxHeight: "calc(100vh - 225px)" }}
                     >
-                      <ul className="list-group list-group-flush w-100">
+                      <ul className="list-group list-group-flush w-100 pt-3">
                         <li className="list-group-item">
                           <div className="d-flex align-items-center">
                             {/* <div className="flex-shrink-0">
@@ -644,41 +643,39 @@ const TopBar = ({
                           </div>
                         </li>
                         <li className="list-group-item">
-                          <Dropdown.Item>
+                        <Dropdown.Item>
                             <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-key"></i>
-                              <span>Change password</span>
+                              <i className="ph-duotone ph-user-circle"></i>
+                              <span>Edit profile</span>
                             </span>
                           </Dropdown.Item>
                           <Dropdown.Item>
-                            <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-envelope-simple"></i>
-                              <span>Recently mail</span>
-                            </span>
-                            {/* <div className="user-group">
-                              <Image
-                                src={avatar1}
-                                alt="user-image"
-                                className="avtar"
-                              />
-                              <Image
-                                src={avatar2}
-                                alt="user-image"
-                                className="avtar"
-                              />
-                              <Image
-                                src={avatar3}
-                                alt="user-image"
-                                className="avtar"
-                              />
-                            </div> */}
+                            <Button
+                              variant="none"
+                              onClick={() => openIntegrationModal('view')}
+                              className="d-flex align-items-center p-0"
+                              id="manage-integrations-button"
+                            >
+                              <Cable size={32} />
+                              <span className="ms-2">Manage Integrations</span>
+                            </Button>
+                            </Dropdown.Item>
+                            <Dropdown.Item style={{ paddingBlock: 0 }}>
+                            {/* <span className="d-flex align-items-center">
+                              <i className="ph-duotone ph-gear-six"></i>
+                              <span>Settings</span>
+                            </span> */}
+                              <button
+                                className="pc-head-link pct-c-btn ph-gear-six d-flex justify-content-start border-0"
+                                style={{ padding: 0, margin: 0, width: '100%' }}
+                                onClick={handleOffcanvasToggle}
+                                data-bs-toggle="offcanvas"
+                                data-bs-target="#offcanvas_pc_layout"
+                              >
+                                <i className="ph-duotone ph-gear-six"></i>
+                                <span>Settings</span>
+                              </button>
                           </Dropdown.Item>
-                          {/* <Dropdown.Item>
-                            <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-calendar-blank"></i>
-                              <span>Schedule meetings</span>
-                            </span>
-                          </Dropdown.Item> */}
                         </li>
                         {/* <li className="list-group-item">
                           <Dropdown.Item>
@@ -732,45 +729,6 @@ const TopBar = ({
                             </div>
                           </div>
                         </li> */}
-                        <li className="list-group-item">
-                          <Dropdown.Item>
-                            <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-user-circle"></i>
-                              <span>Edit profile</span>
-                            </span>
-                          </Dropdown.Item>
-                          {/* <Dropdown.Item>
-                            <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-star text-warning"></i>
-                              <span>Upgrade account</span>
-                              <span className="badge bg-light-success border border-success ms-2">
-                                NEW
-                              </span>
-                            </span>
-                          </Dropdown.Item> */}
-                          <Dropdown.Item>
-                            <span className="d-flex align-items-center ">
-                              <i className="ph-duotone ph-bell"></i>
-                              <span>Notifications</span>
-                            </span>
-                          </Dropdown.Item>
-                          <Dropdown.Item style={{ paddingBlock: 0 }}>
-                            {/* <span className="d-flex align-items-center">
-                              <i className="ph-duotone ph-gear-six"></i>
-                              <span>Settings</span>
-                            </span> */}
-                              <button
-                                className="pc-head-link pct-c-btn ph-gear-six d-flex justify-content-start border-0"
-                                style={{ padding: 0, margin: 0, width: '100%' }}
-                                onClick={handleOffcanvasToggle}
-                                data-bs-toggle="offcanvas"
-                                data-bs-target="#offcanvas_pc_layout"
-                              >
-                                <i className="ph-duotone ph-gear-six"></i>
-                                <span>Settings</span>
-                              </button>
-                          </Dropdown.Item>
-                        </li>
                         <li className="list-group-item">
                           <Dropdown.Item>
                             <span className="d-flex align-items-center">

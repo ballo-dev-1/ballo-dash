@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Table, Form, Spinner, Row, Col } from 'react-bootstrap';
-import { Pencil, Save, X, RefreshCw, Plus, Trash2, Info, Building2 } from 'lucide-react';
+import { Cable, Pencil, Save, X, RefreshCw, Plus, Trash2, Info, Building2 } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCompany } from '@/toolkit/Company/reducer';
 import { integrationsService } from '@/services/integrationsService';
@@ -13,6 +13,7 @@ import {
   deleteIntegration,
   fetchIntegrations as fetchIntegrationsRedux
 } from '@/toolkit/Integrations/reducer';
+import { useIntegrationModal } from '@/hooks/useIntegrationModal';
 
 import toast from 'react-hot-toast';
 
@@ -44,13 +45,13 @@ interface NewIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
-  metadata?: any;
+  metadata?: any;  
 }
 
 
 
-const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?: () => void, onIntegrationDeleted?: () => void}> = ({text, onIntegrationCreated, onIntegrationDeleted}) => {
-  const [show, setShow] = useState(false);
+const IntegrationManagementModal: React.FC = () => {
+  const { isOpen, closeIntegrationModal } = useIntegrationModal();
   const [integrations, setIntegrations] = useState<EditableIntegration[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,14 +79,14 @@ const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?:
 
 
   useEffect(() => {
-    if (show && company?.id) {
+    if (isOpen && company?.id) {
       // Fetch fresh integrations when modal opens
       fetchIntegrations();
       
       // Also refresh Redux store to ensure hasIntegrations is in sync
       dispatch(fetchIntegrationsRedux(company.id));
     }
-  }, [show, company?.id, dispatch]);
+  }, [isOpen, company?.id, dispatch]);
 
   const fetchIntegrations = async () => {
     setLoading(true);
@@ -400,13 +401,8 @@ const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?:
         }
       }
       
-      // Call the callback to notify parent component
-      if (onIntegrationCreated) {
-        onIntegrationCreated();
-      }
-      
       // Close the main modal as well
-      setShow(false);
+      closeIntegrationModal();
       
     } catch (error: any) {
       toast.error(error.message || 'Failed to create integration');
@@ -663,15 +659,12 @@ const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?:
       
       toast.success('Integration deleted successfully!');
       
-      // Check if this was the last integration
-      const remainingIntegrations = integrations.filter(integration => integration.id !== integrationId);
-      if (remainingIntegrations.length === 0) {
-        // If no integrations left, call the callback and close modal
-        if (onIntegrationDeleted) {
-          onIntegrationDeleted();
+              // Check if this was the last integration
+        const remainingIntegrations = integrations.filter(integration => integration.id !== integrationId);
+        if (remainingIntegrations.length === 0) {
+          // If no integrations left, close modal
+          closeIntegrationModal();
         }
-        setShow(false);
-      }
       
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete integration');
@@ -680,33 +673,17 @@ const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?:
 
   return (
     <div className="integration-management-modal">
-      <Button
-        variant="primary"
-        onClick={() => setShow(true)}
-        className="d-flex align-items-center gap-2"
-      >
-        <Pencil size={16} />
-        {text ? text : 'Manage Integrations'}
-      </Button>
+      
 
       {/* Main Modal */}
       <Modal 
-        show={show} 
+        show={isOpen} 
         onHide={() => {
-          setShow(false);
           // Refresh Redux store when modal closes to ensure parent components get updated state
           if (company?.id) {
             dispatch(fetchIntegrationsRedux(company.id));
           }
-          // Trigger data refresh when modal closes to update parent components
-          if (onIntegrationCreated || onIntegrationDeleted) {
-            console.log('🔄 Modal: Closing, triggering data refresh...');
-            // Small delay to ensure modal is fully closed before refresh
-            setTimeout(() => {
-              if (onIntegrationCreated) onIntegrationCreated();
-              if (onIntegrationDeleted) onIntegrationDeleted();
-            }, 100);
-          }
+          closeIntegrationModal();
         }} 
         size="xl" 
         centered
@@ -956,7 +933,7 @@ const IntegrationManagementModal: React.FC<{text: string, onIntegrationCreated?:
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShow(false)}>
+          <Button variant="secondary" onClick={closeIntegrationModal}>
             Close
           </Button>
           <Button variant="outline-primary" onClick={fetchIntegrations} disabled={loading}>

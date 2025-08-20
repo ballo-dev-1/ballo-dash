@@ -36,6 +36,7 @@ import marketingPlansReducer from "./Marketing Plans/reducer";
 import metaReducer from "./metaData/reducer";
 
 import linkedInReducer from "./linkedInData/reducer";
+import integrationModalReducer from "./IntegrationModal/reducer";
 
 // Combine your reducers into a root reducer
 const rootReducer = combineReducers({
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
   integrations: integrationsReducer,
   meta: metaReducer,
   linkedin: linkedInReducer,
+  integrationModal: integrationModalReducer,
 });
 
 const reducer = (state: any, action: AnyAction) => {

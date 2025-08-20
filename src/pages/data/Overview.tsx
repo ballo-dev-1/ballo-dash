@@ -13,21 +13,10 @@ import { useAutoDataRefresh } from "@/hooks/useAutoDataRefresh";
 const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
   const linkedInStats = useSelector(selectLinkedInStats) || {};
-  const { hasIntegrations, loading } = useIntegrations();
+  const { loading } = useIntegrations();
   
   // Auto-refresh data for CONNECTED integrations when component mounts
   useAutoDataRefresh();
-
-
-  // Debug logging
-  useEffect(() => {
-    console.log("=== Overview Component Debug ===");
-    console.log("metaStats from Redux:", metaStats);
-    console.log("linkedInStats from Redux:", linkedInStats);
-    console.log("metaStats keys:", Object.keys(metaStats));
-    console.log("linkedInStats keys:", Object.keys(linkedInStats));
-    console.log("=== End Overview Component Debug ===");
-  }, [metaStats, linkedInStats]);
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
@@ -53,29 +42,10 @@ const Overview = () => {
     );
   }
 
-  if (!hasIntegrations) {
-    return (
-      <NoIntegrations variant="data" />
-    );
-  }
+
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="mx-2">Overview</h3>
-        <IntegrationManagementModal 
-          text="Manage Integrations"
-          onIntegrationCreated={() => {
-            // Refresh integrations to update the hasIntegrations state
-            window.location.reload();
-          }}
-          onIntegrationDeleted={() => {
-            // Refresh integrations to update the hasIntegrations state
-            window.location.reload();
-          }}
-        />
-      </div>
-      
       <Row>
         <Col md={expandedCols[tableKey1] ? 12 : 6}>
           <OverviewAccounts
