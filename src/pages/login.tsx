@@ -56,7 +56,7 @@ const Login = () => {
             <h2 className="login-title">Log in</h2>
             <form className="login-form" onSubmit={handleLogin}>
               <div className="form-group">
-                <label className="form-label">Email</label>
+                <label className="form-label">📧 </label>
                 <div className="form-input-wrapper gap-2">
                   <UserRound color="white" size={20} />
                   <input
@@ -114,12 +114,12 @@ const Login = () => {
               >
                 Sign in
               </button>
-              {/* <p className="signup-text">
+              <p className="signup-text">
                 or{" "}
                 <a href="#" className="signup-link">
                   Sign up
                 </a>
-              </p> */}
+              </p>
             </form>
           </div>
         </div>

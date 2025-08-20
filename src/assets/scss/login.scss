@@ -812,6 +812,29 @@
   gap: 1.25rem;
 }
 
+// two-column responsive grid for signup form
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.5rem;
+  }
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+// make certain actions span full width beneath the grid
+.form-span {
+  grid-column: 1 / -1;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -898,6 +921,12 @@
 }
 
 .signup-text {
+  text-align: center;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+.login {
   text-align: center;
   font-size: 0.875rem;
   margin-top: 1rem;
