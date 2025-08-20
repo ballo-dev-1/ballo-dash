@@ -18,7 +18,7 @@ const NoIntegrations: React.FC<NoIntegrationsProps> = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(true);
-    }, 200); 
+    }, 2000); 
     return () => clearTimeout(timer);
   }, []);
 
