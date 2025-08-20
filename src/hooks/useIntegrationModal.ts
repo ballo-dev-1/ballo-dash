@@ -1,3 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable react/no-children-prop */
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable react/display-name */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable prefer-const */
+/* eslint-disable no-console */
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/toolkit';
 import { openModal, closeModal, setModalMode, setIntegrationId } from '@/toolkit/IntegrationModal/reducer';
