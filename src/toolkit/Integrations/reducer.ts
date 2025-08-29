@@ -8,6 +8,7 @@ export interface Integration {
   companyId: string;
   type: string;
   status: string;
+  handle?: string;
   appId?: string;
   appSecret?: string;
   accessToken: string;

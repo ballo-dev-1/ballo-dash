@@ -4,10 +4,11 @@ interface Integration {
   id: string;
   companyId: string;
   type: string;
+  status: string;
+  handle?: string;
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string | null;
-  status: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -139,6 +140,7 @@ class IntegrationsService {
   public async createIntegration(integrationData: {
     type: string;
     status: string;
+    handle?: string;
     appId?: string;
     appSecret?: string;
     accessToken: string;
@@ -183,6 +185,7 @@ class IntegrationsService {
     accessToken?: string;
     refreshToken?: string | null;
     status?: string;
+    handle?: string;
     expiresAt?: string | null;
   }): Promise<Integration> {
     try {
@@ -226,6 +229,7 @@ class IntegrationsService {
     accessToken?: string;
     refreshToken?: string | null;
     status?: string;
+    handle?: string;
     expiresAt?: string | null;
   }): Promise<Integration> {
     try {
