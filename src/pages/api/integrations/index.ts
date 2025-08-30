@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === "POST") {
       // Create new integration
-      const { type, status, appId, appSecret, accessToken, refreshToken, expiresAt, metadata } = req.body;
+      const { type, status, handle, appId, appSecret, accessToken, refreshToken, expiresAt, metadata } = req.body;
 
       console.log("Creating new integration:", {
         companyId,
@@ -72,6 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             companyId,
             type,
             status,
+            handle: handle || null,
             appId: appId || null,
             appSecret: appSecret || null,
             accessToken,

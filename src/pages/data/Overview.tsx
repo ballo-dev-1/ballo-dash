@@ -5,6 +5,7 @@ import OverviewAudience from "./tables/OverviewAudience";
 import { selectMetaStats } from "@/toolkit/metaData/reducer";
 import { useSelector } from "react-redux";
 import { selectLinkedInStats } from "@/toolkit/linkedInData/reducer";
+import { selectXStats } from "@/toolkit/xData/reducer";
 import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
 import NoIntegrations from "@/components/NoIntegrations";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -13,7 +14,15 @@ import { useAutoDataRefresh } from "@/hooks/useAutoDataRefresh";
 const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
   const linkedInStats = useSelector(selectLinkedInStats) || {};
+  const xStats = useSelector(selectXStats) || {};
   const { loading } = useIntegrations();
+  
+  // Debug logging for X data
+  useEffect(() => {
+    if (xStats && Object.keys(xStats).length > 0) {
+      console.log("🐦 X Data available in Overview:", xStats);
+    }
+  }, [xStats]);
   
   // Auto-refresh data for CONNECTED integrations when component mounts
   useAutoDataRefresh();
@@ -51,6 +60,7 @@ const Overview = () => {
           <OverviewAccounts
             meta={metaStats}
             linkedInData={linkedInStats}
+            xData={xStats}
             isExpanded={!!expandedCols[tableKey1]}
             onToggleExpand={() => toggleExpand(tableKey1)}
           />
@@ -59,6 +69,7 @@ const Overview = () => {
           <OverviewAudience
             meta={metaStats}
             linkedInData={linkedInStats}
+            xData={xStats}
             isExpanded={!!expandedCols[tableKey2]}
             onToggleExpand={() => toggleExpand(tableKey2)}
           />

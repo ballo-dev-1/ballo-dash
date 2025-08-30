@@ -34,6 +34,7 @@ interface Integration {
   companyId: string;
   type: string;
   status: string;
+  handle?: string;
   appId?: string;
   appSecret?: string;
   accessToken: string;
@@ -52,6 +53,7 @@ interface EditableIntegration extends Integration {
 interface NewIntegration {
   type: string;
   status: string;
+  handle?: string;
   appId?: string;
   appSecret?: string;
   accessToken: string;
@@ -73,6 +75,7 @@ const IntegrationManagementModal: React.FC = () => {
   const [newIntegration, setNewIntegration] = useState<NewIntegration>({
     type: 'LINKEDIN',
     status: 'PENDING',
+    handle: '',
     appId: '',
     appSecret: '',
     accessToken: '',
@@ -166,6 +169,7 @@ const IntegrationManagementModal: React.FC = () => {
         accessToken: integration.accessToken,
         refreshToken: integration.refreshToken,
         status: integration.status,
+        handle: integration.handle,
         expiresAt: integration.expiresAt
       });
 
@@ -190,6 +194,7 @@ const IntegrationManagementModal: React.FC = () => {
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
           status: result.status,
+          handle: result.handle,
           expiresAt: result.expiresAt
         }
       }));
@@ -334,6 +339,7 @@ const IntegrationManagementModal: React.FC = () => {
       const createdIntegration = await integrationsService.createIntegration({
         type: newIntegration.type,
         status: newIntegration.status,
+        handle: newIntegration.handle || undefined,
         appId: newIntegration.appId || undefined,
         appSecret: newIntegration.appSecret || undefined,
         accessToken: newIntegration.accessToken,
@@ -372,6 +378,7 @@ const IntegrationManagementModal: React.FC = () => {
       setNewIntegration({
         type: 'LINKEDIN',
         status: 'PENDING',
+        handle: '',
         appId: '',
         appSecret: '',
         accessToken: '',
@@ -749,6 +756,7 @@ const IntegrationManagementModal: React.FC = () => {
                 <tr>
                   <th>Type</th>
                   <th>Status</th>
+                  <th>Handle</th>
                   <th>App ID</th>
                   <th>App Secret</th>
                   <th>Access Token</th>
@@ -782,6 +790,26 @@ const IntegrationManagementModal: React.FC = () => {
                         </Form.Select>
                       ) : (
                         getStatusBadge(integration.status)
+                      )}
+                    </td>
+                    <td>
+                      {integration.isEditing ? (
+                        <Form.Control
+                          type="text"
+                          value={integration.handle || ''}
+                          onChange={(e) => handleInputChange(integration.id, 'handle', e.target.value)}
+                          size="sm"
+                          placeholder="Enter handle (e.g., @username)"
+                          autoComplete="off"
+                        />
+                      ) : (
+                        <small className="text-muted">
+                          {integration.handle ? (
+                            <span className="text-primary">@{integration.handle.replace('@', '')}</span>
+                          ) : (
+                            'Not set'
+                          )}
+                        </small>
                       )}
                     </td>
                     <td>
@@ -903,7 +931,7 @@ const IntegrationManagementModal: React.FC = () => {
                             >
                               <Pencil size={14} />
                             </Button>
-                            {integration.type === 'FACEBOOK' && (
+                            {/* {integration.type === 'FACEBOOK' && (
                               <Button 
                                 size="sm" 
                                 variant="outline-info" 
@@ -917,7 +945,7 @@ const IntegrationManagementModal: React.FC = () => {
                                   <Info size={14} />
                                 )}
                               </Button>
-                            )}
+                            )} */}
                             <Button 
                               size="sm" 
                               variant="outline-danger" 
@@ -935,7 +963,7 @@ const IntegrationManagementModal: React.FC = () => {
                 
                 {integrations.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="text-center text-muted py-4">
+                    <td colSpan={10} className="text-center text-muted py-4">
                       No integrations found. Click "Add New Integration" to get started.
                     </td>
                   </tr>
@@ -1005,6 +1033,21 @@ const IntegrationManagementModal: React.FC = () => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
+                  <Form.Label>Handle</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newIntegration.handle}
+                    onChange={(e) => setNewIntegration(prev => ({ ...prev, handle: e.target.value }))}
+                    placeholder="Enter handle (e.g., @username)"
+                    autoComplete="off"
+                  />
+                  <Form.Text className="text-muted">
+                    Social media handle or profile identifier (e.g., @username, page name)
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
                   <Form.Label>App ID</Form.Label>
                   <Form.Control
                     type="text"
@@ -1020,6 +1063,9 @@ const IntegrationManagementModal: React.FC = () => {
                   </Form.Text>
                 </Form.Group>
               </Col>
+            </Row>
+            
+            <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>App Secret</Form.Label>
@@ -1034,6 +1080,21 @@ const IntegrationManagementModal: React.FC = () => {
                   />
                   <Form.Text className="text-muted">
                     The application secret from the platform developer console (optional)
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Refresh Token</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={newIntegration.refreshToken}
+                    onChange={(e) => setNewIntegration(prev => ({ ...prev, refreshToken: e.target.value }))}
+                    placeholder="Enter refresh token (optional)"
+                    autoComplete="off"
+                  />
+                  <Form.Text className="text-muted">
+                    Refresh token for renewing access (optional)
                   </Form.Text>
                 </Form.Group>
               </Col>

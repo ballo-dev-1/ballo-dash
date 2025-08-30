@@ -37,6 +37,8 @@ export const integrationTypeEnum = pgEnum("integration_type", [
 
 export const integrationStatusEnum = pgEnum("integration_status", [
   integrationStatus.connected,
+  integrationStatus.disconnected,
+  integrationStatus.pending,
   integrationStatus.expired,
   integrationStatus.error,
 ]);
@@ -100,6 +102,7 @@ export const integrations = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     type: integrationTypeEnum("type").notNull(),
     status: integrationStatusEnum("status").default("PENDING").notNull(),
+    handle: text("handle"), // Social media handle or profile identifier
     appId: text("app_id"),
     appSecret: text("app_secret"),
     accessToken: text("access_token").notNull(),

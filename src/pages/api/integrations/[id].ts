@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === "PUT") {
       // Update integration
-      const { accessToken, refreshToken, status, expiresAt } = req.body;
+      const { accessToken, refreshToken, status, handle, expiresAt } = req.body;
 
       console.log("Updating integration:", {
         integrationId,
@@ -50,6 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (accessToken !== undefined) updateData.accessToken = accessToken;
       if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
       if (status !== undefined) updateData.status = status;
+      if (handle !== undefined) updateData.handle = handle;
       if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null;
       updateData.updatedAt = new Date();
 

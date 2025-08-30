@@ -36,6 +36,7 @@ import marketingPlansReducer from "./Marketing Plans/reducer";
 import metaReducer from "./metaData/reducer";
 
 import linkedInReducer from "./linkedInData/reducer";
+import xDataReducer from "./xData/reducer";
 import integrationModalReducer from "./IntegrationModal/reducer";
 
 // Combine your reducers into a root reducer
@@ -51,6 +52,7 @@ const rootReducer = combineReducers({
   integrations: integrationsReducer,
   meta: metaReducer,
   linkedin: linkedInReducer,
+  xData: xDataReducer,
   integrationModal: integrationModalReducer,
 });
 
