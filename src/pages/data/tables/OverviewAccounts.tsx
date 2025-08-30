@@ -17,6 +17,7 @@ import {
 interface OverviewAccountsProps {
   meta: any; // Replace `any` with a proper type if you know the shape of `meta`
   linkedInData?: any; // Add LinkedIn data prop
+  xData?: any; // Add X data prop
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -284,9 +285,48 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
   return result;
 };
 
+// Function to transform X data
+const transformXData = (xData: any): PlatformOverview | null => {
+  if (!xData) return null;
+
+  console.log("🐦 Transforming X data:", xData);
+
+  // Handle both direct data and nested data structure
+  const data = xData.data || xData;
+  
+  const username = data.username || "Unknown";
+  const name = data.name || username;
+  const followers = data.public_metrics?.followers_count || 0;
+  const following = data.public_metrics?.following_count || 0;
+  const tweetCount = data.public_metrics?.tweet_count || 0;
+  const likeCount = data.public_metrics?.like_count || 0;
+  const mediaCount = data.public_metrics?.media_count || 0;
+
+  console.log("🐦 Extracted X metrics:", { username, name, followers, following, tweetCount, likeCount, mediaCount });
+
+  return {
+    platform: "X (Twitter)",
+    pageName: name || username || "X Account",
+    page_fans: followers || "-",
+    page_follows: followers || "-",
+    "Reach (day)": followers || "-",
+    "Reach (week)": followers || "-",
+    "Reach (month)": followers || "-",
+    "Engagement (day)": likeCount || "-",
+    "Engagement (week)": likeCount || "-",
+    "Engagement (month)": likeCount || "-",
+    "CTA Clicks (day)": mediaCount || "-",
+    "CTA Clicks (week)": mediaCount || "-",
+    "CTA Clicks (month)": mediaCount || "-",
+    engagement: likeCount || "-",
+    last_post_date: "-", // X posts are fetched separately
+  };
+};
+
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   meta,
   linkedInData,
+  xData,
   isExpanded,
   onToggleExpand,
 }) => {
@@ -357,7 +397,19 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   }
 
   const instagramData: { instagramData: any }[] = [];
-  const xData: { xData: any }[] = [];
+  
+  // Transform X data
+  const transformedX = xData ? transformXData(xData) : null;
+  const xDataArray: PlatformOverview[] = [];
+  if (transformedX) {
+    xDataArray.push(transformedX);
+    console.log("🐦 X Data transformed and added to table:", transformedX);
+  } else if (xData) {
+    console.log("🐦 X Data available but transformation failed:", xData);
+  } else {
+    console.log("🐦 No X Data available");
+  }
+  
   const tiktokData: { tiktokData: any }[] = [];
   const websiteData: { websiteData: any }[] = [];
   const youtubeData: { youtubeData: any }[] = [];
@@ -367,7 +419,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     ...facebookData,
     ...linkedinDataArray,
     ...instagramData,
-    ...xData,
+    ...xDataArray,
     ...tiktokData,
     ...websiteData,
     ...youtubeData,

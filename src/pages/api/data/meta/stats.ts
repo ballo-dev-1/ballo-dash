@@ -149,7 +149,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await redis.setex(cacheKey, 300, JSON.stringify(newData)); // Cache for 5 minutes
     }
 
-    console.log("Meta final response:", JSON.stringify(newData, null, 2));
+    // console.log("Meta final response:", JSON.stringify(newData, null, 2));
     console.log("=== Meta Stats API Completed Successfully ===");
     res.status(200).json(newData);
   } catch (error) {

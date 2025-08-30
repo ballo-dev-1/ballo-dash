@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/toolkit';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
 import { fetchMetaStats } from '@/toolkit/metaData/reducer';
+import { fetchXStats } from '@/toolkit/xData/reducer';
 import { useSelector } from 'react-redux';
 import { selectIntegrations } from '@/toolkit/Integrations/reducer';
 import { useIntegrations } from './useIntegrations';
@@ -48,6 +49,24 @@ export const useAutoDataRefresh = () => {
         })).unwrap();
         
         console.log(`✅ Auto-refresh: ${integration.type} data refreshed successfully`);
+      } else if (integration.type === 'X') {
+        // For X, we'll use the handle from the integration if available, or a default
+        const username = integration.handle || 'GeorgeMsapenda'; // Default username, should come from integration handle
+        
+                  try {
+            await dispatch(fetchXStats({
+              username,
+              platform: integration.type.toLowerCase(),
+              since: '',
+              until: '',
+              datePreset: 'last_30_days'
+            })).unwrap();
+          
+          console.log(`✅ Auto-refresh: ${integration.type} data refreshed successfully`);
+        } catch (error) {
+          console.warn(`⚠️ Auto-refresh: X API call failed for ${username}:`, error);
+          // Continue with other integrations even if X fails
+        }
       } else {
         console.log(`ℹ️ Auto-refresh: Not implemented for platform: ${integration.type}`);
       }
@@ -64,7 +83,7 @@ export const useAutoDataRefresh = () => {
     // Find all CONNECTED integrations
     const connectedIntegrations = integrations.filter((integration: any) => 
       integration.status === 'CONNECTED' && 
-      (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM')
+      (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM' || integration.type === 'X')
     );
 
     if (connectedIntegrations.length === 0) {

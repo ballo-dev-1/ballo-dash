@@ -17,6 +17,7 @@ import {
 interface OverviewAudienceProps {
   meta: any; // Replace `any` with a proper type if you know the shape of `meta`
   linkedInData?: any; // Add LinkedIn data prop
+  xData?: any; // Add X data prop
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -169,6 +170,7 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
 const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   meta,
   linkedInData,
+  xData,
   isExpanded,
   onToggleExpand,
 }) => {
@@ -213,7 +215,14 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   }
 
   const instagramData: { instagramData: any }[] = [];
-  const xData: { xData: any }[] = [];
+  
+  // Transform X data
+  const transformedX = xData ? transformXData(xData) : null;
+  const xDataArray: PlatformOverview[] = [];
+  if (transformedX) {
+    xDataArray.push(transformedX);
+  }
+  
   const tiktokData: { tiktokData: any }[] = [];
   const websiteData: { websiteData: any }[] = [];
   const youtubeData: { youtubeData: any }[] = [];
@@ -223,7 +232,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
     ...facebookData,
     ...linkedinDataArray,
     ...instagramData,
-    ...xData,
+    ...xDataArray,
     ...tiktokData,
     ...websiteData,
     ...youtubeData,
@@ -296,6 +305,30 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
       </Col>
     </Row>
   );
+};
+
+// Function to transform X data
+const transformXData = (xData: any): PlatformOverview | null => {
+  if (!xData) return null;
+
+  console.log("🐦 Transforming X data for Audience:", xData);
+
+  // Handle both direct data and nested data structure
+  const data = xData.data || xData;
+  
+  const username = data.username || "Unknown";
+  const name = data.name || username;
+  const followers = data.public_metrics?.followers_count || 0;
+
+  console.log("🐦 Extracted X metrics for Audience:", { username, name, followers });
+
+  return {
+    platform: "X (Twitter)",
+    pageName: name || username || "X Account",
+    pageFollowersCity: "Global",
+    pageFollowersCountry: "Global",
+    pageLikesValue: followers ? followers.toLocaleString() : "-",
+  };
 };
 
 export default OverviewAudience;

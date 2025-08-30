@@ -9,9 +9,11 @@ import { linkedinService } from "@/services/linkedinService";
 import { metaService } from "@/services/metaService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
 import { fetchMetaStats } from "@/toolkit/metaData/reducer";
+import { fetchXStats } from "@/toolkit/xData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
 import { AppDispatch } from "@/toolkit";
+import toast from "react-hot-toast";
 
 
 interface AppContextType {
@@ -88,29 +90,87 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   // TODO: Get this from social profiles when they're properly configured
                   const defaultLinkedInOrgId = '90362182'; // This should come from your database
                   
-                  await dispatch(fetchLinkedInStats({
-                    organizationId: defaultLinkedInOrgId,
-                    platform: 'linkedin',
-                    since: '',
-                    until: '',
-                    datePreset: 'last_30_days'
-                  })).unwrap();
-                  
-                  console.log('✅ AppContext: LinkedIn data auto-fetched successfully');
+                  try {
+                    await dispatch(fetchLinkedInStats({
+                      organizationId: defaultLinkedInOrgId,
+                      platform: 'linkedin',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    console.log('✅ AppContext: LinkedIn data auto-fetched successfully');
+                    toast.success('✅ LinkedIn data loaded successfully');
+                  } catch (error: any) {
+                    console.warn(`⚠️ AppContext: LinkedIn API call failed:`, error);
+                    
+                    // Provide more specific error messages based on the error
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
+                    } else {
+                      toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
+                    }
+                  }
                 } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
                   const defaultPageId = 'me'; // This should come from your database
                   
-                  await dispatch(fetchMetaStats({
-                    pageId: defaultPageId,
-                    platform: integration.type.toLowerCase(),
-                    since: '',
-                    until: '',
-                    datePreset: 'last_30_days'
-                  })).unwrap();
+                  try {
+                    await dispatch(fetchMetaStats({
+                      pageId: defaultPageId,
+                      platform: integration.type.toLowerCase(),
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
+                    toast.success(`✅ ${integration.type} data loaded successfully`);
+                  } catch (error: any) {
+                    console.warn(`⚠️ AppContext: ${integration.type} API call failed:`, error);
+                    
+                    // Provide more specific error messages based on the error
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`${integration.type} integration not set up. Please configure your ${integration.type} integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`${integration.type} integration token expired. Please refresh your ${integration.type} integration.`);
+                    } else {
+                      toast.error(`Failed to load ${integration.type} data: ${error.message || 'Unknown error'}`);
+                    }
+                  }
+                } else if (integration.type === 'X') {
+                  // For X, we'll use the handle from the integration if available, or a default
+                  // TODO: Get this from social profiles when they're properly configured
+                  const username = integration.handle || 'GeorgeMsapenda'; // Default username, should come from integration handle
                   
-                  console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
+                  try {
+                    await dispatch(fetchXStats({
+                      username,
+                      platform: integration.type.toLowerCase(),
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
+                    toast.success(`✅ ${integration.type} data loaded successfully`);
+                  } catch (error: any) {
+                    console.warn(`⚠️ AppContext: X API call failed for ${username}:`, error);
+                    
+                    // Provide more specific error messages based on the error
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`X integration not set up. Please configure your X integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`X integration token expired. Please refresh your X integration.`);
+                    } else {
+                      toast.error(`Failed to load ${integration.type} data: ${error.message || 'Unknown error'}`);
+                    }
+                    
+                    // Continue with other integrations even if X fails
+                  }
                 } else {
                   console.log(`ℹ️ AppContext: Auto-fetch not implemented for platform: ${integration.type}`);
                 }
@@ -122,7 +182,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             // Find all CONNECTED integrations and auto-fetch their data
             const connectedIntegrations = integrations.filter((integration: any) => 
               integration.status === 'CONNECTED' && 
-              (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM')
+              (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM' || integration.type === 'X')
             );
 
             console.log('AppContext: Found CONNECTED integrations:', connectedIntegrations.map(i => ({
