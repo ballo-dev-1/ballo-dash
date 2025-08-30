@@ -15,8 +15,6 @@ export async function getXAccessToken(companyId: string): Promise<string | null>
     if (cachedToken) {
       return cachedToken;
     }
-
-    console.log("Fetching X access token from database for company:", companyId);
     
     const xIntegration = await db
       .select()
@@ -30,26 +28,20 @@ export async function getXAccessToken(companyId: string): Promise<string | null>
       .limit(1);
 
     if (!xIntegration || xIntegration.length === 0) {
-      console.error("❌ X integration not found in database for company:", companyId);
       return null;
     }
 
     const accessToken = xIntegration[0].accessToken;
     
     if (!accessToken) {
-      console.error("❌ X access token is empty for company:", companyId);
       return null;
     }
 
     // Cache the token for future use
     tokenCache.cacheToken(companyId, 'X', accessToken);
-
-    console.log("✅ X access token fetched successfully for company:", companyId);
-    console.log("   Token preview:", accessToken.substring(0, 20) + "...");
     
     return accessToken;
   } catch (error) {
-    console.error("❌ Error fetching X access token from database:", error);
     return null;
   }
 }
@@ -74,7 +66,6 @@ export async function hasXIntegration(companyId: string): Promise<boolean> {
 
     return integration.length > 0;
   } catch (error) {
-    console.error("❌ Error checking X integration:", error);
     return false;
   }
 }

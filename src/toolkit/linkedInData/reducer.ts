@@ -22,27 +22,7 @@ interface LinkedInStats {
   [key: string]: any;
 }
 
-// New interface for progressive LinkedIn updates
-interface ProgressiveLinkedInStats {
-  organizationId: string;
-  organizationName?: string;
-  platform?: string;
-  followers?: number | null;
-  impressionCount?: number;
-  uniqueImpressionsCount?: number;
-  clickCount?: number;
-  likeCount?: number;
-  commentCount?: number;
-  shareCount?: number;
-  shareMentionsCount?: number;
-  commentMentionsCount?: number;
-  engagement?: number;
-  since: string;
-  until: string;
-  datePreset: string;
-  loadingMetrics: string[]; // Track which metrics are still loading
-  completedMetrics: string[]; // Track which metrics are completed
-}
+
 
 interface LinkedInPost {
   id: string;
@@ -58,26 +38,20 @@ interface LinkedInPostsResponse {
 
 interface LinkedInState {
   stats: LinkedInStats | null;
-  progressiveStats: ProgressiveLinkedInStats | null; // New progressive stats
   posts: LinkedInPostsResponse | null;
   statusStats: "idle" | "loading" | "succeeded" | "failed";
-  statusProgressiveStats: "idle" | "loading" | "succeeded" | "failed"; // New status
   statusPosts: "idle" | "loading" | "succeeded" | "failed";
   errorStats: string | null;
-  errorProgressiveStats: string | null; // New error
   errorPosts: string | null;
 }
 
 // --- Initial State ---
 const initialState: LinkedInState = {
   stats: null,
-  progressiveStats: null,
   posts: null,
   statusStats: "idle",
-  statusProgressiveStats: "idle",
   statusPosts: "idle",
   errorStats: null,
-  errorProgressiveStats: null,
   errorPosts: null,
 };
 
@@ -89,25 +63,16 @@ export const fetchLinkedInStats = createAsyncThunk<
 >(
   "linkedin/fetchStats",
   async ({ organizationId, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
-    console.log("\n" + "=".repeat(60));
-    console.log("🔗 LINKEDIN REDUX THUNK: fetchLinkedInStats STARTED");
-    console.log("=".repeat(60));
-    console.log("📅 Timestamp:", new Date().toISOString());
-    console.log("📋 Parameters:", { organizationId, platform, since, until, datePreset });
-    
     let state = getState();
-    console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
-    console.log("Current Redux state - integration status:", state.integrations.loading);
+
+
 
     if (state.integrations.integrations.length === 0 && state.integrations.loading !== true) {
-      console.log("No integrations in state, fetching integrations...");
       const companyId = state.company?.id;
       if (companyId) {
         await dispatch(fetchIntegrations(companyId));
         state = getState();
-        console.log("After fetching integrations - count:", state.integrations.integrations.length);
       } else {
-        console.error("❌ No company ID found in state");
         throw new Error("Company ID not found");
       }
     }
@@ -117,21 +82,30 @@ export const fetchLinkedInStats = createAsyncThunk<
     );
 
     if (!integration) {
-      console.error("❌ No LinkedIn integration found in Redux state");
-      console.log("Available integrations:", state.integrations.integrations.map((i: any) => ({ type: i.type, status: i.status })));
-      console.log("=".repeat(60));
       throw new Error("No LinkedIn integration found");
     }
 
-    console.log("✅ LinkedIn integration found:", integration.type);
-    console.log("🔑 Integration status:", integration.status);
-    console.log("🔑 Has access token:", !!integration.accessToken);
-
     const accessToken = integration.accessToken;
 
-    // Construct URL with all query params (no access token needed - API gets it from session)
+    // First, try to get cached data immediately for instant display
+    const cachedUrl = `/api/data/linkedin/cached-stats?organizationId=${organizationId}&platform=${platform}`;
+    
+    let cachedResponse;
+    try {
+      cachedResponse = await fetch(cachedUrl);
+      if (cachedResponse.ok) {
+        const cachedData = await cachedResponse.json();
+        if (cachedData._cached) {
+          // Return cached data immediately, but continue fetching fresh data
+          // This implements the stale-while-revalidate pattern
+        }
+      }
+    } catch (cacheError) {
+      // No cached data available, fetching fresh data only
+    }
+
+    // Now fetch fresh data
     const url = `/api/data/linkedin/stats?organizationId=${organizationId}&since=${since}&until=${until}&datePreset=${datePreset}`;
-    console.log("🌐 About to call LinkedIn API endpoint:", url);
     
     try {
       const res = await fetch(url);
@@ -140,16 +114,10 @@ export const fetchLinkedInStats = createAsyncThunk<
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error("❌ LinkedIn stats fetch failed:", errText);
-        console.log("=".repeat(60));
         throw new Error(`Failed to fetch LinkedIn stats: ${errText}`);
       }
 
-      const json = await res.json();  
-      console.log("✅ LinkedIn API response received successfully");
-      console.log("📊 Response data keys:", Object.keys(json));
-      console.log("📊 Organization info:", json.organizationInfo);
-      console.log("📊 Metrics available:", Object.keys(json.metrics || {}));
+      const json = await res.json();
 
       // Shape the returned metrics to match LinkedInStats interface
       const result = {
@@ -172,13 +140,53 @@ export const fetchLinkedInStats = createAsyncThunk<
         datePreset,
       };
       
-      console.log("✅ SUCCESS: LinkedIn data transformed and ready");
-      console.log("📊 Final result:", result);
-      console.log("=".repeat(60));
       return result;
     } catch (error) {
-      console.error("❌ ERROR in LinkedIn thunk:", error);
-      console.log("=".repeat(60));
+      // If fresh data fetch fails, try to return cached data as fallback
+      try {
+        const cachedUrl = `/api/data/linkedin/cached-stats?organizationId=${organizationId}&platform=${platform}`;
+        const cachedResponse = await fetch(cachedUrl);
+        
+        if (cachedResponse.ok) {
+          const cachedData = await cachedResponse.json();
+          if (cachedData._cached && cachedData._fetchStatus === 'SUCCESS') {
+            console.log("📦 LinkedIn: Fresh data failed, falling back to cached data");
+            
+            // Transform cached data to match LinkedInStats interface
+            const transformedCachedStats: LinkedInStats = {
+              organizationId,
+              organizationName: cachedData.organizationInfo?.name || "Unknown Company",
+              followers: cachedData.metrics.page_follows
+                ? parseInt(cachedData.metrics.page_follows.replace(/[^0-9]/g, ""), 10)
+                : null,
+              impressionCount: cachedData.metrics.impressions?.impressionCount || 0,
+              uniqueImpressionsCount: cachedData.metrics.impressions?.uniqueImpressionsCount || 0,
+              clickCount: cachedData.metrics.impressions?.clickCount || 0,
+              likeCount: cachedData.metrics.impressions?.likeCount || 0,
+              commentCount: cachedData.metrics.impressions?.commentCount || 0,
+              shareCount: cachedData.metrics.impressions?.shareCount || 0,
+              shareMentionsCount: cachedData.metrics.impressions?.shareMentionsCount || 0,
+              commentMentionsCount: cachedData.metrics.impressions?.commentMentionsCount || 0,
+              engagement: cachedData.metrics.impressions?.engagement || 0,
+              since,
+              until,
+              datePreset,
+            };
+            
+            // Add cache metadata
+            (transformedCachedStats as any)._cached = true;
+            (transformedCachedStats as any)._fetchStatus = 'SUCCESS';
+            (transformedCachedStats as any)._lastFetchedAt = cachedData._lastFetchedAt;
+            (transformedCachedStats as any)._message = "Showing cached data due to fresh data fetch failure";
+            
+            return transformedCachedStats;
+          }
+        }
+      } catch (cacheError) {
+        console.warn("LinkedIn: Failed to fallback to cached data:", cacheError);
+      }
+      
+      // If no cached data available, throw the original error
       throw error;
     }
   }

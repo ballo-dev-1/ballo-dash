@@ -4,6 +4,7 @@ import { JSDOM } from "jsdom";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { getLinkedInAccessToken } from "@/lib/linkedin";
+import { socialMediaCacheService } from "@/services/socialMediaCacheService";
 
 const LINKEDIN_API_BASE = "https://api.linkedin.com/v2";
 
@@ -15,15 +16,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const organizationId = Array.isArray(rawOrgId) ? rawOrgId[0] : rawOrgId;
   const { since, until, datePreset } = req.query;
 
-  if (!organizationId) {
-    console.log("❌ Missing organizationId");
-    return res.status(400).json({ error: "Missing organizationId" });
-  }
-
-  // console.log("✅ Organization ID:", organizationId);
-  // console.log("✅ Since:", since);
-  // console.log("✅ Until:", until);
-  // console.log("✅ Date Preset:", datePreset);
+      if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
 
   try {
     // Get user session to find company ID
@@ -36,6 +31,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const companyId = session.user.companyId;
     if (!companyId) {
       return res.status(400).json({ error: "Company ID not found in session" });
+    }
+
+    // Check if we have fresh cached data
+    const cachedData = await socialMediaCacheService.getData(
+      companyId,
+      'LINKEDIN',
+      organizationId
+    );
+
+    if (cachedData && cachedData.fetchStatus === 'SUCCESS') {
+      return res.status(200).json(cachedData.data);
     }
 
     // Fetch LinkedIn access token directly from database
@@ -122,12 +128,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     };
 
-    // console.log("LinkedIn final response:", JSON.stringify(finalResponse, null, 2));
-    console.log("=== LinkedIn Stats API Completed Successfully ===");
+    // Store successful result in cache
+    try {
+      await socialMediaCacheService.storeData(
+        companyId,
+        'LINKEDIN',
+        organizationId,
+        finalResponse,
+        'SUCCESS'
+      );
+    } catch (cacheError) {
+      // Don't fail the request if caching fails
+    }
+
     res.status(200).json(finalResponse);
   } catch (error: any) {
-    console.error("LinkedIn API Error:", error);
-    console.log("=== LinkedIn Stats API Failed ===");
     res.status(500).json({
       error: "Failed to fetch LinkedIn data",
       details: error.message,

@@ -15,8 +15,6 @@ export async function getLinkedInAccessToken(companyId: string): Promise<string 
     if (cachedToken) {
       return cachedToken;
     }
-
-    console.log("Fetching LinkedIn access token from database for company:", companyId);
     
     const linkedInIntegration = await db
       .select()
@@ -30,26 +28,20 @@ export async function getLinkedInAccessToken(companyId: string): Promise<string 
       .limit(1);
 
     if (!linkedInIntegration || linkedInIntegration.length === 0) {
-      console.error("❌ LinkedIn integration not found in database for company:", companyId);
       return null;
     }
 
     const accessToken = linkedInIntegration[0].accessToken;
     
     if (!accessToken) {
-      console.error("❌ LinkedIn access token is empty for company:", companyId);
       return null;
     }
 
     // Cache the token for future use
     tokenCache.cacheToken(companyId, 'LINKEDIN', accessToken);
-
-    console.log("✅ LinkedIn access token fetched successfully for company:", companyId);
-    console.log("   Token preview:", accessToken.substring(0, 20) + "...");
     
     return accessToken;
   } catch (error) {
-    console.error("❌ Error fetching LinkedIn access token from database:", error);
     return null;
   }
 }
@@ -74,7 +66,6 @@ export async function hasLinkedInIntegration(companyId: string): Promise<boolean
 
     return integration.length > 0;
   } catch (error) {
-    console.error("❌ Error checking LinkedIn integration:", error);
     return false;
   }
 }

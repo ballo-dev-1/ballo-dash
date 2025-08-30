@@ -102,6 +102,8 @@ export const fetchMetaStats = createAsyncThunk<
     console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
     console.log("Current Redux state - integration status:", state.integrations.loading);
 
+
+
     if (
       state.integrations.integrations.length === 0 &&
       state.integrations.loading !== true

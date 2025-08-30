@@ -15,9 +15,9 @@ import {
 } from "@/toolkit/linkedInData/reducer";
 
 interface OverviewAudienceProps {
-  meta: any; // Replace `any` with a proper type if you know the shape of `meta`
-  linkedInData?: any; // Add LinkedIn data prop
-  xData?: any; // Add X data prop
+  meta: any;
+  linkedInData?: any;
+  xData?: any;
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -318,7 +318,10 @@ const transformXData = (xData: any): PlatformOverview | null => {
   
   const username = data.username || "Unknown";
   const name = data.name || username;
-  const followers = data.public_metrics?.followers_count || 0;
+  
+  // Extract metrics directly from the data structure (not nested under public_metrics)
+  const followers = data.followers || 0;
+  const likes = data.likeCount || 0;    
 
   console.log("🐦 Extracted X metrics for Audience:", { username, name, followers });
 
