@@ -10,6 +10,7 @@ interface InstagramStats {
     id: string;
     platform: string;
     biography?: string;
+    followers_count?: number;
   };
   metrics: {
     followers: number;

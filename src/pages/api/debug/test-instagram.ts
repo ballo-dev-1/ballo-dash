@@ -49,11 +49,11 @@ export default async function handler(
 
     console.log("✅ Step 2: Account ID found:", accountId);
 
-    // Step 3: Test Instagram profile API (bio, username)
+    // Step 3: Test Instagram profile API (bio, username, followers_count)
     console.log("🔍 Step 3: Testing Instagram profile API...");
     
     const profileResponse = await fetch(
-      `https://graph.facebook.com/v23.0/${accountId}?fields=biography,id,username&access_token=${accessToken}`
+      `https://graph.facebook.com/v23.0/${accountId}?fields=biography,id,username,followers_count&access_token=${accessToken}`
     );
 
     console.log("📊 Profile API Status:", profileResponse.status);

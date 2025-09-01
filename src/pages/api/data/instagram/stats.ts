@@ -75,7 +75,7 @@ export default async function handler(
     // Fetch Instagram profile info (bio, username) and insights
     const [profileResponse, reachResponse, engagementResponse] = await Promise.all([
       fetch(
-        `https://graph.facebook.com/v23.0/${accountId}?fields=biography,id,username&access_token=${accessToken}`
+        `https://graph.facebook.com/v23.0/${accountId}?fields=biography,id,username,followers_count&access_token=${accessToken}`
       ),
       fetch(
         `https://graph.facebook.com/v19.0/${accountId}/insights?metric=reach,follower_count,threads_views&period=day&access_token=${accessToken}`
@@ -98,7 +98,8 @@ export default async function handler(
     console.log("📸 Instagram Profile Data:", {
       username: profileData.username,
       biography: profileData.biography,
-      id: profileData.id
+      id: profileData.id,
+      followers_count: profileData.followers_count
     });
 
     // Prepare raw data for transformation
@@ -107,10 +108,11 @@ export default async function handler(
         username: profileData.username || accountId, // Use real username from API, fallback to account ID
         id: accountId,
         platform: "instagram",
-        biography: profileData.biography || ""
+        biography: profileData.biography || "",
+        followers_count: profileData.followers_count || 0
       },
       metrics: {
-        followers: reachData.data?.find((m: any) => m.name === "follower_count")?.values?.[0]?.value || 0,
+        followers: profileData.followers_count || reachData.data?.find((m: any) => m.name === "follower_count")?.values?.[0]?.value || 0,
         reach: reachData.data?.find((m: any) => m.name === "reach")?.values?.[0]?.value || 0,
         threadsViews: reachData.data?.find((m: any) => m.name === "threads_views")?.values?.[0]?.value || 0,
         websiteClicks: engagementData.data?.find((m: any) => m.name === "website_clicks")?.values?.[0]?.value || 0,

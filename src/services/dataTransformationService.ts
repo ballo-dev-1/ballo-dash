@@ -76,6 +76,7 @@ export interface InstagramData {
     id: string;
     platform: string;
     biography?: string;
+    followers_count?: number;
   };
   metrics: {
     followers: number;
@@ -399,16 +400,20 @@ class DataTransformationService {
 
     const username = instagramData.userInfo.username;
     const biography = instagramData.userInfo.biography || "";
+    const profileFollowers = instagramData.userInfo.followers_count;
     const metrics = instagramData.metrics;
 
     // Create a more descriptive page name that includes bio if available
     const pageName = username;
 
+    // Use profile follower count if available, otherwise fallback to insights follower count
+    const followers = profileFollowers || metrics.followers || 0;
+
     return {
       platform: "Instagram",
       pageName: pageName || "Instagram Account",
-      page_fans: metrics.followers || "-",
-      page_follows: metrics.followers || "-",
+      page_fans: followers || "-",
+      page_follows: followers || "-",
       "Reach (day)": metrics.reach || "-",
       "Reach (week)": metrics.reach || "-",
       "Reach (month)": metrics.reach || "-",
@@ -435,14 +440,18 @@ class DataTransformationService {
     }
 
     const username = instagramData.userInfo.username;
+    const profileFollowers = instagramData.userInfo.followers_count;
     const metrics = instagramData.metrics;
+
+    // Use profile follower count if available, otherwise fallback to insights follower count
+    const followers = profileFollowers || metrics.followers || 0;
 
     return {
       platform: "Instagram",
       pageName: username || "Instagram Account",
       pageFollowersCity: "Global",
       pageFollowersCountry: "Global",
-      pageLikesValue: metrics.likes ? metrics.likes.toLocaleString() : "-",
+      pageLikesValue: followers ? followers.toLocaleString() : "-",
     };
   }
 }
