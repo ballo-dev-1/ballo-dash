@@ -5,20 +5,20 @@ import { apimethod } from "@common/JsonData";
 import { useAppDispatch, useAppSelector } from "@/toolkit/hooks";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchMetaStats,
-  selectMetaErrorStats,
-  selectMetaStats,
-  selectMetaStatusStats,
-} from "@/toolkit/metaData/reducer";
+  fetchFacebookStats,
+  selectFacebookErrorStats,
+  selectFacebookStats,
+  selectFacebookStatusStats,
+} from "@/toolkit/facebookData/reducer";
 
 const OverviewRecentPostPerfomance = () => {
   const dispatch = useAppDispatch();
-  const stats = useSelector(selectMetaStats);
-  const status = useSelector(selectMetaStatusStats);
-  const error = useSelector(selectMetaErrorStats);
+  const stats = useSelector(selectFacebookStats);
+  const status = useSelector(selectFacebookStatusStats);
+  const error = useSelector(selectFacebookErrorStats);
 
   useEffect(() => {
-    dispatch(fetchMetaStats({ pageId: "me", platform: "facebook" }));
+    dispatch(fetchFacebookStats({ pageId: "me", platform: "facebook" }));
   }, [dispatch]);
   useEffect(() => {
     console.log("App stats");

@@ -33,7 +33,7 @@ import integrationsReducer from "./Integrations/reducer";
 
 import marketingPlansReducer from "./Marketing Plans/reducer";
 
-import metaReducer from "./metaData/reducer";
+import facebookReducer from "./facebookData/reducer";
 
 import linkedInReducer from "./linkedInData/reducer";
 import xDataReducer from "./xData/reducer";
@@ -51,7 +51,7 @@ const rootReducer = combineReducers({
   user: userReducer,
   marketingPlans: marketingPlansReducer,
   integrations: integrationsReducer,
-  meta: metaReducer,
+  facebook: facebookReducer,
   linkedin: linkedInReducer,
   xData: xDataReducer,
   instagramData: instagramReducer,

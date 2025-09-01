@@ -4,10 +4,10 @@ import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { 
-  selectProgressiveMetaStats, 
-  selectProgressiveMetaStatus,
-  selectProgressiveMetaError 
-} from "@/toolkit/metaData/reducer";
+  selectProgressiveFacebookStats,
+  selectProgressiveFacebookStatus,
+  selectProgressiveFacebookError
+} from "@/toolkit/facebookData/reducer";
 import { 
   selectProgressiveLinkedInStats, 
   selectProgressiveLinkedInStatus,
@@ -15,7 +15,7 @@ import {
 } from "@/toolkit/linkedInData/reducer";
 
 interface OverviewAccountsProps {
-  meta: any; // Replace `any` with a proper type if you know the shape of `meta`
+  facebook: any; // Replace `any` with a proper type if you know the shape of `facebook`
   linkedInData?: any; // Add LinkedIn data prop
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -40,15 +40,15 @@ interface PlatformOverview {
   last_post_date?: Date | string;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
-  if (!meta) return null;
+const transformFacebookData = (facebook: any): PlatformOverview | null => {
+  if (!facebook) return null;
 
   const {
     platform = "Facebook",
     pageInfo,
     metrics = {},
     recentPost = "-",
-  } = meta;
+  } = facebook;
 
   const pageName = pageInfo?.name ?? "-";
   const pageFansArr = metrics.page_fans?.day?.values || [];
@@ -116,7 +116,7 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
 };
 
 // New function to transform progressive data
-const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
+const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
   if (!progressiveData) return null;
 
   const { pageInfo, metrics, recentPost, loadingMetrics } = progressiveData;
@@ -152,7 +152,7 @@ const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | 
   return {
     platform: progressiveData.platform || "Facebook",
     pageName,
-    page_fans: getMetricValue("page_fans", "day"),
+    page_fans: getMetricValue("page_fans", "lifetime"),
     page_follows: getMetricValue("page_follows", "lifetime"),
     "Reach (day)": getMetricValue("page_impressions", "day"),
     "Reach (week)": getMetricValue("page_impressions", "week"),
@@ -254,15 +254,15 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
 };
 
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
-  meta,
+  facebook,
   linkedInData,
   isExpanded,
   onToggleExpand,
 }) => {
   // Get progressive data from Redux
-  const progressiveData = useSelector(selectProgressiveMetaStats);
-  const progressiveStatus = useSelector(selectProgressiveMetaStatus);
-  const progressiveError = useSelector(selectProgressiveMetaError);
+  const progressiveData = useSelector(selectProgressiveFacebookStats);
+  const progressiveStatus = useSelector(selectProgressiveFacebookStatus);
+  const progressiveError = useSelector(selectProgressiveFacebookError);
   
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
   const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
@@ -277,10 +277,10 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     console.log("progressiveLinkedInData:", progressiveLinkedInData);
     console.log("progressiveLinkedInStatus:", progressiveLinkedInStatus);
     console.log("progressiveLinkedInError:", progressiveLinkedInError);
-    console.log("meta:", meta);
+    console.log("facebook:", facebook);
     console.log("linkedInData:", linkedInData);
     console.log("=== End Table OverviewAccounts Debug ===");
-  }, [progressiveData, progressiveStatus, progressiveError, progressiveLinkedInData, progressiveLinkedInStatus, progressiveLinkedInError, meta, linkedInData]);
+  }, [progressiveData, progressiveStatus, progressiveError, progressiveLinkedInData, progressiveLinkedInStatus, progressiveLinkedInError, facebook, linkedInData]);
 
   const [reachHeader, setReachHeader] = useState("Reach (week)");
   const [engagementHeader, setEngagementHeader] =
@@ -289,10 +289,10 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const facebookData: PlatformOverview[] = [];
   const linkedinDataArray: PlatformOverview[] = [];
 
-  // Use progressive data if available, otherwise fall back to regular meta data
+  // Use progressive data if available, otherwise fall back to regular facebook data
   const transformed = progressiveData 
-    ? transformProgressiveMetaData(progressiveData)
-    : transformMetaData(meta);
+    ? transformProgressiveFacebookData(progressiveData)
+    : transformFacebookData(facebook);
     
   if (transformed) {
     facebookData.push(transformed);
@@ -374,7 +374,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
 
   // Determine loading state
   const isLoading = progressiveStatus === "loading" || progressiveLinkedInStatus === "loading" || 
-                   (!progressiveData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+                   (!progressiveData && !facebook?.metrics && !progressiveLinkedInData && !linkedInData);
 
   return (
     <Row>

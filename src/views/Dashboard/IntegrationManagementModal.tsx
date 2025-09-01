@@ -17,7 +17,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectCompany } from '@/toolkit/Company/reducer';
 import { integrationsService } from '@/services/integrationsService';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
-import { fetchMetaStats } from '@/toolkit/metaData/reducer';
+import { fetchFacebookStats } from '@/toolkit/facebookData/reducer';
 import { AppDispatch } from '@/toolkit';
 import { 
   createIntegration, 
@@ -420,7 +420,7 @@ const IntegrationManagementModal: React.FC = () => {
             toast.success('LinkedIn data fetched successfully for new integration!');
           } else if (createdIntegration.type === 'FACEBOOK' || createdIntegration.type === 'INSTAGRAM') {
             // Fetch Meta data using Redux action
-            await dispatch(fetchMetaStats({
+            await dispatch(fetchFacebookStats({
               pageId: 'me', // Default page ID - should come from social profiles
               platform: createdIntegration.type.toLowerCase(),
               since: '',

@@ -10,7 +10,7 @@ interface PlatformOverview {
   pageFollowersValue?: number;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
+const transformFacebookData = (meta: any): PlatformOverview | null => {
   if (!meta) return null;
 
   const {
@@ -58,7 +58,7 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
 const PostsMeta = ({ meta }: { meta: any }) => {
   const facebookData: PlatformOverview[] = [];
 
-  const transformed = transformMetaData(meta?.metaStats ?? null);
+  const transformed = transformFacebookData(meta?.metaStats ?? null);
   if (transformed) {
     facebookData.push(transformed);
   }

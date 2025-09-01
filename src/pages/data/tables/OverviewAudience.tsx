@@ -4,10 +4,11 @@ import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { 
-  selectProgressiveMetaStats, 
-  selectProgressiveMetaStatus,
-  selectProgressiveMetaError 
-} from "@/toolkit/metaData/reducer";
+  selectProgressiveFacebookStats,
+  selectProgressiveFacebookStatus,
+  selectProgressiveFacebookError,
+  selectFacebookStats
+} from "@/toolkit/facebookData/reducer";
 import { 
   selectProgressiveLinkedInStats, 
   selectProgressiveLinkedInStatus,
@@ -16,9 +17,12 @@ import {
 import { 
   selectInstagramStats
 } from "@/toolkit/instagramData/reducer";
+import { 
+  selectProgressiveXStats
+} from "@/toolkit/xData/reducer";
 
 interface OverviewAudienceProps {
-  meta: any;
+  facebook: any;
   linkedInData?: any;
   xData?: any;
   instagramDataProp?: any;
@@ -34,10 +38,10 @@ interface PlatformOverview {
   pageLikesValue?: number | string;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
-  if (!meta) return null;
+const transformFacebookData = (facebook: any): PlatformOverview | null => {
+  if (!facebook) return null;
 
-  const { platform, pageInfo, metrics = {} } = meta;
+  const { platform, pageInfo, metrics = {} } = facebook;
 
   const pageName = pageInfo?.name ?? "-";
   const pageFansCityArr = Array.isArray(metrics.page_fans_city?.day?.values)
@@ -80,7 +84,7 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
 };
 
 // New function to transform progressive Facebook data
-const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
+const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
   if (!progressiveData) return null;
 
   const { pageInfo, metrics, loadingMetrics } = progressiveData;
@@ -211,7 +215,7 @@ const transformInstagramDataForAudience = (instagramData: any): PlatformOverview
 };
 
 const OverviewAudience: React.FC<OverviewAudienceProps> = ({
-  meta,
+  facebook,
   linkedInData,
   xData,
   instagramDataProp,
@@ -219,13 +223,17 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   onToggleExpand,
 }) => {
   // Get progressive data from Redux
-  const progressiveMetaData = useSelector(selectProgressiveMetaStats);
-  const progressiveMetaStatus = useSelector(selectProgressiveMetaStatus);
-  const progressiveMetaError = useSelector(selectProgressiveMetaError);
+  const progressiveFacebookData = useSelector(selectProgressiveFacebookStats);
+  const progressiveFacebookStatus = useSelector(selectProgressiveFacebookStatus);
+  const progressiveFacebookError = useSelector(selectProgressiveFacebookError);
+  
+  // Get regular Facebook data from Redux
+  const facebookStats = useSelector(selectFacebookStats);
   
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
   const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
   const progressiveLinkedInError = useSelector(selectProgressiveLinkedInError);
+  const progressiveXData = useSelector(selectProgressiveXStats);
   const instagramStats = useSelector(selectInstagramStats);
 
   const [reachHeader, setReachHeader] = useState("Reach (week)");
@@ -235,10 +243,10 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   const facebookData: PlatformOverview[] = [];
   const linkedinDataArray: PlatformOverview[] = [];
 
-  // Use progressive Facebook data if available, otherwise fall back to regular meta data
-  const transformedFacebook = progressiveMetaData 
-    ? transformProgressiveMetaData(progressiveMetaData)
-    : transformMetaData(meta);
+    // Use progressive Facebook data if available, otherwise fall back to regular facebook data
+  const transformedFacebook = progressiveFacebookData
+    ? transformProgressiveFacebookData(progressiveFacebookData)
+    : transformFacebookData(facebookStats || facebook);
     
   if (transformedFacebook) {
     facebookData.push(transformedFacebook);
@@ -271,7 +279,9 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   }
   
   // Transform X data
-  const transformedX = xData ? transformXData(xData) : null;
+  const transformedX = progressiveXData 
+    ? transformXData(progressiveXData)
+    : xData ? transformXData(xData) : null;
   const xDataArray: PlatformOverview[] = [];
   if (transformedX) {
     xDataArray.push(transformedX);
@@ -326,8 +336,8 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   ];
 
   // Determine loading state
-  const isLoading = progressiveMetaStatus === "loading" || progressiveLinkedInStatus === "loading" || 
-                   (!progressiveMetaData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+    const isLoading = progressiveFacebookStatus === "loading" || progressiveLinkedInStatus === "loading" ||
+    (!progressiveFacebookData && !facebookStats?.metrics && !facebook?.metrics && !progressiveLinkedInData && !linkedInData);
 
   return (
     <Row>

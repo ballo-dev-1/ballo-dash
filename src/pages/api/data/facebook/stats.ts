@@ -9,8 +9,8 @@ function hasDataChanged(oldData: any, newData: any) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("=== Meta Stats API Called ===");
-  console.log("Meta Stats API - Request received");
+  console.log("=== Facebook Stats API Called ===");
+  console.log("Facebook Stats API - Request received");
   console.log("Query params:", req.query);
   
   const { pageId, platform, since, until, datePreset } = req.query;
@@ -58,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log("✅ Retrieved Facebook access token from database for stats, company:", companyId);
     console.log("   Token preview:", accessToken.substring(0, 20) + "...");
 
-    const cacheKey = `metaStats:${pageId}:${since || " "}:${until || " "}:${
+    const cacheKey = `facebookStats:${pageId}:${since || " "}:${until || " "}:${
       datePreset || " "
     }`;
     const cached = await redis.get(cacheKey);
@@ -150,11 +150,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // console.log("Meta final response:", JSON.stringify(newData, null, 2));
-    console.log("=== Meta Stats API Completed Successfully ===");
+    console.log("=== Facebook Stats API Completed Successfully ===");
     res.status(200).json(newData);
   } catch (error) {
     console.error("Error fetching Facebook stats:", error);
-    console.log("=== Meta Stats API Failed ===");
+    console.log("=== Facebook Stats API Failed ===");
     res.status(500).json({ error: "Failed to fetch Facebook stats" });
   }
 }

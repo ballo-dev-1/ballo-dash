@@ -3,7 +3,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/toolkit';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
-import { fetchMetaStats } from '@/toolkit/metaData/reducer';
+import { fetchFacebookStats } from '@/toolkit/facebookData/reducer';
 import { fetchXStats } from '@/toolkit/xData/reducer';
 import { fetchInstagramStats } from '@/toolkit/instagramData/reducer';
 import { useSelector } from 'react-redux';
@@ -39,7 +39,7 @@ export const useAutoDataRefresh = () => {
         // TODO: Get this from social profiles when they're properly configured
         const defaultPageId = 'me'; // This should come from your database
         
-        await dispatch(fetchMetaStats({
+        await dispatch(fetchFacebookStats({
           pageId: defaultPageId,
           platform: integration.type.toLowerCase(),
           since: '',

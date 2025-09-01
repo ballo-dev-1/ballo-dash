@@ -26,7 +26,7 @@ export interface PlatformAudienceOverview {
   pageLikesValue?: any;
 }
 
-export interface ProgressiveMetaData {
+export interface ProgressiveFacebookData {
   pageInfo: any;
   metrics: Record<string, any>;
   recentPost: any;
@@ -70,6 +70,27 @@ export interface XData {
   datePreset: string;
 }
 
+export interface ProgressiveXData {
+  username: string;
+  platform: string;
+  userId: string;
+  name: string;
+  description: string;
+  profileImageUrl: string;
+  verified: boolean;
+  followers: number;
+  following: number;
+  tweetCount: number;
+  listedCount: number;
+  likeCount: number;
+  mediaCount: number;
+  since: string;
+  until: string;
+  datePreset: string;
+  loadingMetrics: string[];
+  completedMetrics: string[];
+}
+
 export interface InstagramData {
   userInfo: {
     username: string;
@@ -101,6 +122,39 @@ export interface InstagramData {
   datePreset?: string;
 }
 
+export interface ProgressiveInstagramData {
+  userInfo: {
+    username: string;
+    id: string;
+    platform: string;
+    biography?: string;
+    followers_count?: number;
+  };
+  metrics: {
+    followers: number;
+    reach: number;
+    threadsViews: number;
+    websiteClicks: number;
+    profileViews: number;
+    accountsEngaged: number;
+    totalInteractions: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    replies: number;
+    followsAndUnfollows: number;
+    profileLinksTaps: number;
+    views: number;
+    contentViews: number;
+  };
+  since?: string;
+  until?: string;
+  datePreset?: string;
+  loadingMetrics: string[];
+  completedMetrics: string[];
+}
+
 export interface LinkedInData {
   organizationId: string;
   organizationName: string;
@@ -119,7 +173,7 @@ export interface LinkedInData {
   datePreset: string;
 }
 
-export interface MetaData {
+export interface FacebookData {
   platform: string;
   pageInfo: any;
   metrics: Record<string, any>;
@@ -139,12 +193,12 @@ class DataTransformationService {
   }
 
   /**
-   * Transform Meta/Facebook data to PlatformOverview format
+   * Transform Facebook data to PlatformOverview format
    */
-  public transformMetaData(metaData: MetaData): PlatformOverview | null {
-    if (!metaData) return null;
+  public transformFacebookData(facebookData: FacebookData): PlatformOverview | null {
+    if (!facebookData) return null;
 
-    const { pageInfo, metrics, recentPost } = metaData;
+    const { pageInfo, metrics, recentPost } = facebookData;
     
     // Defensive check for metrics
     if (!metrics || typeof metrics !== 'object') {
@@ -199,9 +253,9 @@ class DataTransformationService {
   }
 
   /**
-   * Transform progressive Meta data to PlatformOverview format
+   * Transform progressive Facebook data to PlatformOverview format
    */
-  public transformProgressiveMetaData(progressiveData: ProgressiveMetaData): PlatformOverview | null {
+  public transformProgressiveFacebookData(progressiveData: ProgressiveFacebookData): PlatformOverview | null {
     if (!progressiveData) return null;
 
     const { pageInfo, metrics, recentPost, loadingMetrics } = progressiveData;
@@ -246,7 +300,7 @@ class DataTransformationService {
     return {
       platform: progressiveData.platform || "Facebook",
       pageName,
-      page_fans: getMetricValue("page_fans", "day"),
+      page_fans: getMetricValue("page_fans", "lifetime"),
       page_follows: getMetricValue("page_follows", "lifetime"),
       "Reach (day)": getMetricValue("page_impressions", "day"),
       "Reach (week)": getMetricValue("page_impressions", "week"),
@@ -388,6 +442,61 @@ class DataTransformationService {
   }
 
   /**
+   * Transform progressive X data to PlatformOverview format
+   */
+  public transformProgressiveXData(progressiveData: ProgressiveXData): PlatformOverview | null {
+    if (!progressiveData) return null;
+
+    // Defensive check for required fields
+    if (!progressiveData.username) {
+      return null;
+    }
+
+    const username = progressiveData.username || "Unknown";
+    const name = progressiveData.name || username;
+    
+    // Helper function to get metric value with loading state
+    const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+      if (progressiveData.loadingMetrics?.includes(metricName)) {
+        return "Loading...";
+      }
+      
+      switch (metricName) {
+        case "followers":
+          return progressiveData.followers || defaultValue;
+        case "following":
+          return progressiveData.following || defaultValue;
+        case "tweets":
+          return progressiveData.tweetCount || defaultValue;
+        case "likes":
+          return progressiveData.likeCount || defaultValue;
+        case "media":
+          return progressiveData.mediaCount || defaultValue;
+        default:
+          return defaultValue;
+      }
+    };
+
+    return {
+      platform: "X (Twitter)",
+      pageName: name || username || "X Account",
+      page_fans: getMetricValue("likes"),
+      page_follows: getMetricValue("followers"),
+      "Reach (day)": getMetricValue("followers"),
+      "Reach (week)": getMetricValue("followers"),
+      "Reach (month)": getMetricValue("followers"),
+      "Engagement (day)": getMetricValue("likes"),
+      "Engagement (week)": getMetricValue("likes"),
+      "Engagement (month)": getMetricValue("likes"),
+      "CTA Clicks (day)": getMetricValue("media"),
+      "CTA Clicks (week)": getMetricValue("media"),
+      "CTA Clicks (month)": getMetricValue("media"),
+      engagement: getMetricValue("likes"),
+      last_post_date: "-", // X posts are fetched separately
+    };
+  }
+
+  /**
    * Transform Instagram data to PlatformOverview format
    */
   public transformInstagramData(instagramData: InstagramData): PlatformOverview | null {
@@ -452,6 +561,67 @@ class DataTransformationService {
       pageFollowersCity: "Global",
       pageFollowersCountry: "Global",
       pageLikesValue: followers ? followers.toLocaleString() : "-",
+    };
+  }
+
+  /**
+   * Transform progressive Instagram data to PlatformOverview format
+   */
+  public transformProgressiveInstagramData(progressiveData: ProgressiveInstagramData): PlatformOverview | null {
+    if (!progressiveData) return null;
+
+    // Defensive check for required fields
+    if (!progressiveData.userInfo?.username) {
+      return null;
+    }
+
+    const username = progressiveData.userInfo.username;
+    const biography = progressiveData.userInfo.biography || "";
+    const profileFollowers = progressiveData.userInfo.followers_count;
+    const metrics = progressiveData.metrics;
+
+    // Helper function to get metric value with loading state
+    const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+      if (progressiveData.loadingMetrics?.includes(metricName)) {
+        return "Loading...";
+      }
+      
+      switch (metricName) {
+        case "followers":
+          return profileFollowers || metrics.followers || defaultValue;
+        case "reach":
+          return metrics.reach || defaultValue;
+        case "engagement":
+          return metrics.totalInteractions || defaultValue;
+        case "website_clicks":
+          return metrics.websiteClicks || defaultValue;
+        default:
+          return defaultValue;
+      }
+    };
+
+    // Create a more descriptive page name that includes bio if available
+    const pageName = username;
+
+    // Use profile follower count if available, otherwise fallback to insights follower count
+    const followers = profileFollowers || metrics.followers || 0;
+
+    return {
+      platform: "Instagram",
+      pageName: pageName || "Instagram Account",
+      page_fans: getMetricValue("followers"),
+      page_follows: getMetricValue("followers"),
+      "Reach (day)": getMetricValue("reach"),
+      "Reach (week)": getMetricValue("reach"),
+      "Reach (month)": getMetricValue("reach"),
+      "Engagement (day)": getMetricValue("engagement"),
+      "Engagement (week)": getMetricValue("engagement"),
+      "Engagement (month)": getMetricValue("engagement"),
+      "CTA Clicks (day)": getMetricValue("website_clicks"),
+      "CTA Clicks (week)": getMetricValue("website_clicks"),
+      "CTA Clicks (month)": getMetricValue("website_clicks"),
+      engagement: getMetricValue("engagement"),
+      last_post_date: "-", // Instagram posts are fetched separately
     };
   }
 }

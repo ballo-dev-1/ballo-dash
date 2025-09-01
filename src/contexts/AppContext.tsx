@@ -6,9 +6,9 @@ import { companyService } from "@/services/companyService";
 import { userService } from "@/services/userService";
 import { integrationsService } from "@/services/integrationsService";
 import { linkedinService } from "@/services/linkedinService";
-import { metaService } from "@/services/metaService";
+import { facebookService } from "@/services/facebookService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
-import { fetchMetaStats } from "@/toolkit/metaData/reducer";
+import { fetchFacebookStats } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
 import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
@@ -101,6 +101,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                 } else if (integration.type === 'FACEBOOK') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
+                  const defaultPageId = 'me'; // This should come from your database
+                  
+                  try {
+                    await dispatch(fetchFacebookStats({
+                      pageId: defaultPageId,
+                      platform: 'facebook',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    toast.success('Facebook data loaded successfully');
+                  } catch (error: any) {
+                    console.error(`❌ Facebook error:`, error);
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`Facebook integration not set up. Please configure your Facebook integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`Facebook integration token expired. Please refresh your Facebook integration.`);
+                    } else {
+                      toast.error(`Failed to load Facebook data: ${error.message || 'Unknown error'}`);
+                    }
+                  }
                 } else if (integration.type === 'INSTAGRAM') {
                   console.log(`📸 Processing Instagram integration for: ${integration.type}`);
                   try {

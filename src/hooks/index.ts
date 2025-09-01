@@ -2,4 +2,4 @@
 export { useCompanyData } from './useCompanyData';
 export { useUserData } from './useUserData';
 export { useLinkedInData } from './useLinkedInData';
-export { useMetaData } from './useMetaData';
+export { useFacebookData } from './useFacebookData';

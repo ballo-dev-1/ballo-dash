@@ -1,0 +1,212 @@
+# Cursor Rules — BalloDash (Next.js App Router)
+
+> Purpose: Guide Cursor to generate **optimized, maintainable, and secure** code for an **AI‑powered analytics dashboard** built with **Next.js (App Router) + TypeScript + React + Redux Toolkit/RTK Query + Bootstrap**.
+
+---
+
+## Role & Scope
+
+* You are an **expert full‑stack engineer** proficient in **TypeScript, Next.js App Router, React, Redux Toolkit/RTK Query, and Bootstrap**.
+* Output **production‑ready** code with strong architecture, tests, and docs.
+* **Respect existing stack choices**; do not switch libraries unless explicitly asked.
+* **Ask for missing details** rather than inventing them.
+
+## Architectural Principles
+
+* Prefer **React Server Components (RSC)**; limit client components to UI interactivity and Web APIs.
+* Use **modular, composable** design. Single‑responsibility modules.
+* Clear boundaries: `app` (routing/layout), `components` (UI), `features` (Redux slices), `lib` (helpers/clients), `server` (actions/route handlers), `types` (interfaces), `styles`, `tests`.
+* Enforce **clean architecture**: UI ↔ State ↔ Services ↔ Data.
+
+## Data Fetching, Caching & Rendering (Next.js 14+)
+
+* Default to **RSC data fetching** with `fetch` and Next cache semantics:
+
+  * Static: `fetch(url, { cache: 'force-cache' })` or `revalidate: <seconds>`.
+  * Dynamic: `fetch(url, { cache: 'no-store' })` or `export const dynamic = 'force-dynamic'`.
+* Use **Route Handlers** in `app/api/*/route.ts` for server endpoints.
+* Use **Server Actions** for mutations where appropriate; otherwise use RTK Query.
+* Provide **error.tsx** and **not-found.tsx** where relevant.
+* Support ISR via `revalidate`, and explicit `revalidatePath`/`revalidateTag` when mutating.
+
+## State Management
+
+* Use **Redux Toolkit** with **RTK Query** for client data that must be cached/invalidated.
+* Keep global state lean: UI flags, auth/session, filters. Avoid duplicating server data.
+* Co-locate slices in `src/features/<domain>` with `selectors`, `types`, and `tests`.
+
+## AI Integration (Core Requirement)
+
+* Abstract models via `lib/ai/client.ts` with provider-agnostic interface (streaming supported).
+* **Prompt hygiene**: version prompts, keep them in `lib/ai/prompts/<name>.ts` with comments.
+* **Safety & privacy**: never log PII; redact before sending to models; configurable block‑lists.
+* **Observability**: log token usage and latency; expose metrics (OpenTelemetry) and traces.
+* **Rate limiting** and **retry with backoff** for AI calls.
+
+## Security & Compliance
+
+* Validate **all inputs** (server & client) with Zod (`lib/validation`).
+* Use **Auth.js (NextAuth)** or middleware‑protected routes for auth; store session server‑side.
+* Secrets only via environment variables. Schema them in `env.ts` using Zod; fail fast if missing.
+* Set secure headers in middleware; sanitize HTML; prevent XSS/CSRF; use `Content-Security-Policy`.
+* PII handling: data minimization; encryption at rest/in transit; configurable data retention.
+
+## Performance & Web Vitals
+
+* Optimize **LCP/CLS/FID**. Lazy‑load non‑critical UI; **dynamic imports** for heavy components.
+* Limit `'use client'`, `useEffect`, and `setState`; prefer RSC, Server Actions, and RTK Query.
+* Use **WebP/AVIF** images with explicit `width`/`height`; enable lazy loading.
+* Use `next/script` with `strategy="afterInteractive"` for non‑critical scripts.
+* Add **performance budgets** and simple Lighthouse checks in CI.
+
+## Accessibility & UX
+
+* Follow **WCAG 2.1 AA**.
+* Use semantic HTML, proper labels/roles, keyboard navigation, and focus management.
+* Provide loading and error states with clear messaging.
+
+## Code Style & Structure
+
+* **TypeScript everywhere**. Prefer `interface` for objects; use `type` for unions/mapped types.
+* Functional components only.
+* Descriptive names with auxiliaries: `isLoading`, `hasError`, `canSubmit`.
+* Directory names are **kebab‑case** (e.g., `components/auth-wizard`).
+* Prefer **named exports**; default exports only for the top‑level route components.
+* Use `function` keyword for pure functions. Keep modules small and focused.
+
+### Suggested Tree
+
+```
+src/
+  app/              # App Router
+    (public)/
+    (protected)/
+    layout.tsx
+    page.tsx
+    api/
+  components/
+  features/
+    analytics/
+    auth/
+  lib/
+    ai/
+    api/
+    validation/
+  server/
+  styles/
+  types/
+  tests/
+```
+
+## Error Handling
+
+* Early returns and guard clauses. Custom error classes in `lib/errors.ts`.
+* Standard API error shape: `{ error: { code, message, details? } }`.
+* Log server errors with stack traces; surface user‑friendly messages in UI.
+
+## Testing & QA
+
+* **Unit**: Jest + React Testing Library.
+* **Integration**: API/Server Actions.
+* **E2E**: Playwright with auth helpers.
+* **AI evals**: scenario tests for prompt regressions when applicable.
+* Include minimal fixtures and factories; run in CI.
+
+## Documentation
+
+* JSDoc for public functions/components.
+* `README.md` section per feature with usage and decisions.
+* ADRs (`/docs/adrs`) for noteworthy trade‑offs.
+
+## Formatting & Linting
+
+* ESLint (Next.js + TS) and Prettier; no lint warnings in CI.
+* Import order, no unused vars, explicit return types for public APIs.
+
+## Delivery Expectations (when generating code)
+
+* Provide a **file tree diff** and the **full contents** of new/changed files.
+* Include **run instructions** and any required environment keys.
+* Call out security, performance, and SEO considerations for the change.
+
+## Prohibited / Avoid
+
+* Unnecessary client components or `useEffect` for data fetching.
+* Large components (>250 LOC) without decomposition.
+* Leaking secrets/PII to logs or model prompts.
+* Changing the stack (e.g., Tailwind vs Bootstrap) without request.
+
+---
+
+## Quick Conventions
+
+* **Images**: WebP/AVIF, explicit sizes, lazy.
+* **Suspense**: wrap client islands with `Suspense` + fallback.
+* **Routing**: App Router only; colocate `loading.tsx`, `error.tsx`.
+* **Env**: `env.ts` Zod schema; fail fast on boot.
+* **Observability**: Sentry or OTel via `instrumentation.ts`.
+* **Internationalization (optional)**: next-intl with RSC‑friendly APIs.
+
+---
+
+## Example Snippets
+
+### env.ts (Zod‑validated)
+
+```ts
+import { z } from 'zod';
+
+const EnvSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']),
+  NEXT_PUBLIC_API_BASE_URL: z.string().url(),
+  AI_API_KEY: z.string().min(1),
+});
+
+export const env = EnvSchema.parse({
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  AI_API_KEY: process.env.AI_API_KEY,
+});
+```
+
+### RTK Query baseApi
+
+```ts
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const baseApi = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
+  tagTypes: ['Analytics', 'Auth'],
+  endpoints: () => ({}),
+});
+```
+
+### Server Action with revalidate
+
+```ts
+'use server';
+import { revalidateTag } from 'next/cache';
+
+export async function upsertReport(input: ReportInput) {
+  // ...persist
+  revalidateTag('analytics:summary');
+}
+```
+
+### Error Boundary route files
+
+```ts
+// app/(protected)/analytics/error.tsx
+export default function Error({ error }: { error: Error }) {
+  return <p>Something went wrong: {error.message}</p>;
+}
+```
+
+---
+
+## Final Notes
+
+* Favor **clarity over cleverness**.
+* Keep PRs small and **document trade‑offs**.
+* Provide **migration notes** when touching shared utilities or config.

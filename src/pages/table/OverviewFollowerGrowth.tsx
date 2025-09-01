@@ -10,7 +10,7 @@ interface PlatformOverview {
   pageFollowersValue?: number;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
+const transformFacebookData = (meta: any): PlatformOverview | null => {
   if (!meta) return null;
 
   const {
@@ -62,7 +62,7 @@ const OverviewFollowerGrowth = ({ meta }: { meta: any }) => {
   const [CTAClicksHeader, setCTAClicksHeader] = useState("CTA Clicks (month)");
   const facebookData: PlatformOverview[] = [];
 
-  const transformed = transformMetaData(meta);
+  const transformed = transformFacebookData(meta);
   if (transformed) {
     facebookData.push(transformed);
   }

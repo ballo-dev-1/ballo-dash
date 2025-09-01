@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import OverviewAccounts from "./tables/OverviewAccounts";
 import OverviewAudience from "./tables/OverviewAudience";
-import { selectMetaStats } from "@/toolkit/metaData/reducer";
+import { selectFacebookStats } from "@/toolkit/facebookData/reducer";
 import { useSelector } from "react-redux";
 import { selectLinkedInStats } from "@/toolkit/linkedInData/reducer";
 import { selectXStats } from "@/toolkit/xData/reducer";
@@ -14,7 +14,7 @@ import { useAutoDataRefresh } from "@/hooks/useAutoDataRefresh";
 import CacheStatusIndicator from "@/components/CacheStatusIndicator";
 
 const Overview = () => {
-  const metaStats = useSelector(selectMetaStats) || {};
+  const facebookStats = useSelector(selectFacebookStats) || {};
   const linkedInStats = useSelector(selectLinkedInStats) || {};
   const xStats = useSelector(selectXStats) || {};
   const instagramStats = useSelector(selectInstagramStats) || {};
@@ -74,7 +74,7 @@ const Overview = () => {
           <div className="d-flex gap-3 flex-wrap">
             <CacheStatusIndicator data={xStats} platform="X" />
             <CacheStatusIndicator data={linkedInStats} platform="LinkedIn" />
-            <CacheStatusIndicator data={metaStats} platform="Meta" />
+            <CacheStatusIndicator data={facebookStats} platform="Facebook" />
             <CacheStatusIndicator data={instagramStats} platform="Instagram" />
           </div>
         </Col>
@@ -83,7 +83,7 @@ const Overview = () => {
       <Row>
         <Col md={expandedCols[tableKey1] ? 12 : 6}>
           <OverviewAccounts
-            meta={metaStats}
+            facebook={facebookStats}
             linkedInData={linkedInStats}
             xData={xStats}
             instagramDataProp={instagramStats}
@@ -93,7 +93,7 @@ const Overview = () => {
         </Col>
         <Col md={expandedCols[tableKey2] ? 12 : 6}>
           <OverviewAudience
-            meta={metaStats}
+            facebook={facebookStats}
             linkedInData={linkedInStats}
             xData={xStats}
             instagramDataProp={instagramStats}

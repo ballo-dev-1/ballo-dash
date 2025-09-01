@@ -4,20 +4,24 @@ import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { 
-  selectProgressiveMetaStats, 
-  selectProgressiveMetaStatus,
-  selectProgressiveMetaError 
-} from "@/toolkit/metaData/reducer";
+  selectProgressiveFacebookStats,
+  selectProgressiveFacebookStatus,
+  selectProgressiveFacebookError,
+  selectFacebookStats
+} from "@/toolkit/facebookData/reducer";
 import { 
   selectProgressiveLinkedInStats
 } from "@/toolkit/linkedInData/reducer";
 import { 
   selectInstagramStats
 } from "@/toolkit/instagramData/reducer";
+import { 
+  selectProgressiveXStats
+} from "@/toolkit/xData/reducer";
 import DataTransformationService, { PlatformOverview } from "@/services/dataTransformationService";
 
 interface OverviewAccountsProps {
-  meta: any;
+  facebook: any;
   linkedInData?: any;
   xData?: any;
   instagramDataProp?: any;
@@ -25,12 +29,12 @@ interface OverviewAccountsProps {
   onToggleExpand: () => void;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
-  return DataTransformationService.getInstance().transformMetaData(meta);
+const transformFacebookData = (facebook: any): PlatformOverview | null => {
+  return DataTransformationService.getInstance().transformFacebookData(facebook);
 };
 
-const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
-  return DataTransformationService.getInstance().transformProgressiveMetaData(progressiveData);
+const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
+  return DataTransformationService.getInstance().transformProgressiveFacebookData(progressiveData);
 };
 
 const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
@@ -45,6 +49,10 @@ const transformXData = (xData: any): PlatformOverview | null => {
   return DataTransformationService.getInstance().transformXData(xData);
 };
 
+const transformProgressiveXData = (progressiveData: any): PlatformOverview | null => {
+  return DataTransformationService.getInstance().transformProgressiveXData(progressiveData);
+};
+
 const transformInstagramData = (instagramData: any): PlatformOverview | null => {
   // Check if data is already in PlatformOverview format (has been transformed)
   if (instagramData && instagramData.platform && instagramData.pageName && typeof instagramData.platform === 'string') {
@@ -57,7 +65,7 @@ const transformInstagramData = (instagramData: any): PlatformOverview | null => 
 };
 
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
-  meta,
+  facebook,
   linkedInData,
   xData,
   instagramDataProp,
@@ -67,11 +75,15 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
 
 
   // Get progressive data from Redux
-  const progressiveData = useSelector(selectProgressiveMetaStats);
-  const progressiveStatus = useSelector(selectProgressiveMetaStatus);
-  const progressiveError = useSelector(selectProgressiveMetaError);
+  const progressiveData = useSelector(selectProgressiveFacebookStats);
+  const progressiveStatus = useSelector(selectProgressiveFacebookStatus);
+  const progressiveError = useSelector(selectProgressiveFacebookError);
+  
+  // Get regular Facebook data from Redux
+  const facebookStats = useSelector(selectFacebookStats);
   
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
+  const progressiveXData = useSelector(selectProgressiveXStats);
   const instagramStats = useSelector(selectInstagramStats);
 
 
@@ -83,10 +95,18 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const facebookData: PlatformOverview[] = [];
   const linkedinDataArray: PlatformOverview[] = [];
 
-  // Use progressive Facebook data if available, otherwise fall back to regular meta data
+  // Use progressive Facebook data if available, otherwise fall back to regular facebook data
   const transformed = progressiveData 
-    ? transformProgressiveMetaData(progressiveData)
-    : transformMetaData(meta);
+    ? transformProgressiveFacebookData(progressiveData)
+    : transformFacebookData(facebookStats || facebook);
+    
+  // Debug logging
+  console.log("🔍 Facebook Data Debug in OverviewAccounts:");
+  console.log("  - progressiveData:", progressiveData);
+  console.log("  - facebookStats:", facebookStats);
+  console.log("  - facebook prop:", facebook);
+  console.log("  - transformed:", transformed);
+  console.log("  - facebookData array:", facebookData);
     
   if (transformed) {
     facebookData.push(transformed);
@@ -113,13 +133,14 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   }
   
   // Transform X data
-  const transformedX = xData ? transformXData(xData) : null;
+  const transformedX = progressiveXData 
+    ? transformProgressiveXData(progressiveXData)
+    : xData ? transformXData(xData) : null;
   const xDataArray: PlatformOverview[] = [];
   if (transformedX) {
     xDataArray.push(transformedX);
-
-  } else if (xData) {
-    console.log("🐦 X Data available but transformation failed:", xData);
+  } else if (progressiveXData || xData) {
+    console.log("🐦 X Data available but transformation failed:", progressiveXData || xData);
   } else {
     console.log("🐦 No X Data available");
   }
@@ -189,7 +210,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
 
   // Determine loading state
   const isLoading = progressiveStatus === "loading" || 
-                   (!progressiveData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+                   (!progressiveData && !facebookStats?.metrics && !facebook?.metrics && !progressiveLinkedInData && !linkedInData);
 
   return (
     <Row>
