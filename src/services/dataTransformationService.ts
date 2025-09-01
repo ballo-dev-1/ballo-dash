@@ -5,6 +5,7 @@ export interface PlatformOverview {
   pageName: string;
   page_fans: any;
   page_follows: any;
+  page_status?: any;
   "Reach (day)"?: any;
   "Reach (week)"?: any;
   "Reach (month)"?: any;
@@ -236,8 +237,9 @@ class DataTransformationService {
     return {
       platform: "Facebook",
       pageName,
-      page_fans: getMetricValue("page_fans", "lifetime"),
-      page_follows: getMetricValue("page_follows", "lifetime"),
+      page_fans: getMetricValue("page_fans", "day"),
+      page_follows: getMetricValue("page_follows", "day"),
+      page_status: getMetricValue("page_status", "day"),
       "Reach (day)": getMetricValue("page_impressions", "day"),
       "Reach (week)": getMetricValue("page_impressions", "week"),
       "Reach (month)": getMetricValue("page_impressions", "days_28"),
@@ -301,7 +303,8 @@ class DataTransformationService {
       platform: progressiveData.platform || "Facebook",
       pageName,
       page_fans: getMetricValue("page_fans", "lifetime"),
-      page_follows: getMetricValue("page_follows", "lifetime"),
+      page_follows: getMetricValue("page_follows", "day"),
+      page_status: getMetricValue("page_status", "day"),
       "Reach (day)": getMetricValue("page_impressions", "day"),
       "Reach (week)": getMetricValue("page_impressions", "week"),
       "Reach (month)": getMetricValue("page_impressions", "days_28"),

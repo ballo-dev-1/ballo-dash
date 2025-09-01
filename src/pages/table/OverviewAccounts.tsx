@@ -53,7 +53,7 @@ const transformFacebookData = (facebook: any): PlatformOverview | null => {
   const pageName = pageInfo?.name ?? "-";
   const pageFansArr = metrics.page_fans?.day?.values || [];
   const page_fans = pageFansArr[pageFansArr.length - 1]?.value ?? "-";
-  const pageFollowsArr = metrics.page_follows?.lifetime?.values || [];
+  const pageFollowsArr = metrics.page_follows?.day?.values || [];
   const page_follows = pageFollowsArr[pageFollowsArr.length - 1]?.value ?? "-";
 
   const reachDayArr = metrics?.page_impressions?.day?.values ?? [];
@@ -153,7 +153,7 @@ const transformProgressiveFacebookData = (progressiveData: any): PlatformOvervie
     platform: progressiveData.platform || "Facebook",
     pageName,
     page_fans: getMetricValue("page_fans", "lifetime"),
-    page_follows: getMetricValue("page_follows", "lifetime"),
+          page_follows: getMetricValue("page_follows", "day"),
     "Reach (day)": getMetricValue("page_impressions", "day"),
     "Reach (week)": getMetricValue("page_impressions", "week"),
     "Reach (month)": getMetricValue("page_impressions", "days_28"),

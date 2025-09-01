@@ -196,13 +196,6 @@ export const fetchFacebookStatsProgressive = createAsyncThunk<
     { pageId, platform, since = "", until = "", datePreset = "" },
     { dispatch, getState }
   ) => {
-    // console.log("=== fetchFacebookStatsProgressive started ===");
-    // console.log("pageId:", pageId);
-    // console.log("platform:", platform);
-    // console.log("since:", since);
-    // console.log("until:", until);
-    // console.log("datePreset:", datePreset);
-    
     let state = getState();
 
     // Wait for integrations to be loaded if they're not already
