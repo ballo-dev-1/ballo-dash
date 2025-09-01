@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Update integration
-    const { accessToken, refreshToken, status, handle, expiresAt } = req.body;
+    const { accessToken, refreshToken, status, handle, appId, appSecret, expiresAt, accountId } = req.body;
 
     console.log("Modal Update API: Updating integration:", {
       integrationId,
@@ -40,11 +40,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       accessToken: accessToken ? "***" : "not provided",
       refreshToken: refreshToken ? "***" : "not provided",
       status,
-      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : "not provided"
+      handle: handle || "not provided",
+      appId: appId ? "***" : "not provided",
+      appSecret: appSecret ? "***" : "not provided",
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : "not provided",
+      accountId: accountId || "not provided"
     });
 
     // Validate required fields
-    if (!accessToken && !refreshToken && !status && expiresAt === undefined) {
+    if (!accessToken && !refreshToken && !status && !handle && !appId && !appSecret && expiresAt === undefined && !accountId) {
       console.log("❌ Modal Update API: Validation failed: No fields provided for update");
       return res.status(400).json({ error: "At least one field must be provided for update" });
     }
@@ -55,7 +59,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (refreshToken !== undefined) updateData.refreshToken = refreshToken;
     if (status !== undefined) updateData.status = status;
     if (handle !== undefined) updateData.handle = handle;
+    if (appId !== undefined) updateData.appId = appId;
+    if (appSecret !== undefined) updateData.appSecret = appSecret;
     if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? new Date(expiresAt) : null;
+    if (accountId !== undefined) updateData.accountId = accountId;
     updateData.updatedAt = new Date();
 
     console.log("Modal Update API: Update data to be applied:", updateData);

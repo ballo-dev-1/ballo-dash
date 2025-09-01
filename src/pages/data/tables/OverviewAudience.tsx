@@ -13,11 +13,15 @@ import {
   selectProgressiveLinkedInStatus,
   selectProgressiveLinkedInError 
 } from "@/toolkit/linkedInData/reducer";
+import { 
+  selectInstagramStats
+} from "@/toolkit/instagramData/reducer";
 
 interface OverviewAudienceProps {
   meta: any;
   linkedInData?: any;
   xData?: any;
+  instagramDataProp?: any;
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -167,10 +171,50 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
   };
 };
 
+// Function to transform Instagram data for Audience view
+const transformInstagramDataForAudience = (instagramData: any): PlatformOverview | null => {
+  if (!instagramData) return null;
+
+  console.log("📸 Transforming Instagram data for Audience:", instagramData);
+
+  // Check if data is already in PlatformOverview format (has been transformed)
+  if (instagramData && instagramData.platform && instagramData.pageName && typeof instagramData.platform === 'string') {
+    // Data is already transformed, adapt it for audience view
+    return {
+      platform: "Instagram",
+      pageName: instagramData.pageName,
+      pageFollowersCity: "Global",
+      pageFollowersCountry: "Global",
+      pageLikesValue: instagramData.page_fans !== "-" ? instagramData.page_fans : "-",
+    };
+  }
+
+  // Handle raw data structure
+  const data = instagramData.data || instagramData;
+  
+  const username = data.userInfo?.username || "Unknown";
+  const metrics = data.metrics || {};
+  
+  // Extract metrics
+  const followers = metrics.followers || 0;
+  const likes = metrics.likes || 0;    
+
+  console.log("📸 Extracted Instagram metrics for Audience:", { username, followers, likes });
+
+  return {
+    platform: "Instagram",
+    pageName: username || "Instagram Account",
+    pageFollowersCity: "Global", // Instagram doesn't provide city breakdown
+    pageFollowersCountry: "Global", // Instagram doesn't provide country breakdown
+    pageLikesValue: followers ? followers.toLocaleString() : "-",
+  };
+};
+
 const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   meta,
   linkedInData,
   xData,
+  instagramDataProp,
   isExpanded,
   onToggleExpand,
 }) => {
@@ -182,6 +226,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
   const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
   const progressiveLinkedInError = useSelector(selectProgressiveLinkedInError);
+  const instagramStats = useSelector(selectInstagramStats);
 
   const [reachHeader, setReachHeader] = useState("Reach (week)");
   const [engagementHeader, setEngagementHeader] =
@@ -214,7 +259,16 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
     linkedinDataArray.push(transformedLinkedIn);
   }
 
-  const instagramData: { instagramData: any }[] = [];
+  // Transform Instagram data for Audience view
+  const transformedInstagram = instagramStats || instagramDataProp ? transformInstagramDataForAudience(instagramStats || instagramDataProp) : null;
+  const instagramDataArray: PlatformOverview[] = [];
+  if (transformedInstagram) {
+    instagramDataArray.push(transformedInstagram);
+  } else if (instagramStats || instagramDataProp) {
+    console.log("📸 Instagram Data available but transformation failed:", instagramStats || instagramDataProp);
+  } else {
+    console.log("📸 No Instagram Data available");
+  }
   
   // Transform X data
   const transformedX = xData ? transformXData(xData) : null;
@@ -231,7 +285,7 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   const data = [
     ...facebookData,
     ...linkedinDataArray,
-    ...instagramData,
+    ...instagramDataArray,
     ...xDataArray,
     ...tiktokData,
     ...websiteData,

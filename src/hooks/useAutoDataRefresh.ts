@@ -5,6 +5,7 @@ import { AppDispatch } from '@/toolkit';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
 import { fetchMetaStats } from '@/toolkit/metaData/reducer';
 import { fetchXStats } from '@/toolkit/xData/reducer';
+import { fetchInstagramStats } from '@/toolkit/instagramData/reducer';
 import { useSelector } from 'react-redux';
 import { selectIntegrations } from '@/toolkit/Integrations/reducer';
 import { useIntegrations } from './useIntegrations';
@@ -33,7 +34,7 @@ export const useAutoDataRefresh = () => {
           datePreset: 'last_30_days'
         })).unwrap();
         
-      } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
+      } else if (integration.type === 'FACEBOOK') {
         // For now, we'll use a default page ID since we don't have social profiles set up yet
         // TODO: Get this from social profiles when they're properly configured
         const defaultPageId = 'me'; // This should come from your database
@@ -41,6 +42,15 @@ export const useAutoDataRefresh = () => {
         await dispatch(fetchMetaStats({
           pageId: defaultPageId,
           platform: integration.type.toLowerCase(),
+          since: '',
+          until: '',
+          datePreset: 'last_30_days'
+        })).unwrap();
+        
+      } else if (integration.type === 'INSTAGRAM') {
+        // Instagram uses account ID-based fetching, no username needed
+        await dispatch(fetchInstagramStats({
+          platform: 'instagram',
           since: '',
           until: '',
           datePreset: 'last_30_days'

@@ -15,6 +15,13 @@
       "when": 1756551748293,
       "tag": "0001_groovy_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756569610972,
+      "tag": "0002_young_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

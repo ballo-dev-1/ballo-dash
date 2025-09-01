@@ -6,6 +6,7 @@ import { selectMetaStats } from "@/toolkit/metaData/reducer";
 import { useSelector } from "react-redux";
 import { selectLinkedInStats } from "@/toolkit/linkedInData/reducer";
 import { selectXStats } from "@/toolkit/xData/reducer";
+import { selectInstagramStats } from "@/toolkit/instagramData/reducer";
 import IntegrationManagementModal from "@/views/Dashboard/IntegrationManagementModal";
 import NoIntegrations from "@/components/NoIntegrations";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -16,6 +17,7 @@ const Overview = () => {
   const metaStats = useSelector(selectMetaStats) || {};
   const linkedInStats = useSelector(selectLinkedInStats) || {};
   const xStats = useSelector(selectXStats) || {};
+  const instagramStats = useSelector(selectInstagramStats) || {};
   const { loading } = useIntegrations();
   
   // Log cached data for debugging
@@ -73,6 +75,7 @@ const Overview = () => {
             <CacheStatusIndicator data={xStats} platform="X" />
             <CacheStatusIndicator data={linkedInStats} platform="LinkedIn" />
             <CacheStatusIndicator data={metaStats} platform="Meta" />
+            <CacheStatusIndicator data={instagramStats} platform="Instagram" />
           </div>
         </Col>
       </Row>
@@ -83,6 +86,7 @@ const Overview = () => {
             meta={metaStats}
             linkedInData={linkedInStats}
             xData={xStats}
+            instagramDataProp={instagramStats}
             isExpanded={!!expandedCols[tableKey1]}
             onToggleExpand={() => toggleExpand(tableKey1)}
           />
@@ -92,6 +96,7 @@ const Overview = () => {
             meta={metaStats}
             linkedInData={linkedInStats}
             xData={xStats}
+            instagramDataProp={instagramStats}
             isExpanded={!!expandedCols[tableKey2]}
             onToggleExpand={() => toggleExpand(tableKey2)}
           />

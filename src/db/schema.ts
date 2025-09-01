@@ -109,6 +109,7 @@ export const integrations = pgTable(
     refreshToken: text("refresh_token"),
     expiresAt: timestamp("expires_at"),
     lastSyncedAt: timestamp("last_synced_at"),
+    accountId: text("account_id"), // Platform-specific account ID (e.g., Instagram business account ID, Facebook page ID)
     metadata: jsonb("metadata"),
     companyId: uuid("company_id")
       .notNull()

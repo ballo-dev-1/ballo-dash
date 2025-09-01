@@ -11,12 +11,16 @@ import {
 import { 
   selectProgressiveLinkedInStats
 } from "@/toolkit/linkedInData/reducer";
+import { 
+  selectInstagramStats
+} from "@/toolkit/instagramData/reducer";
 import DataTransformationService, { PlatformOverview } from "@/services/dataTransformationService";
 
 interface OverviewAccountsProps {
   meta: any;
   linkedInData?: any;
   xData?: any;
+  instagramDataProp?: any;
   isExpanded: boolean;
   onToggleExpand: () => void;
 }
@@ -41,10 +45,22 @@ const transformXData = (xData: any): PlatformOverview | null => {
   return DataTransformationService.getInstance().transformXData(xData);
 };
 
+const transformInstagramData = (instagramData: any): PlatformOverview | null => {
+  // Check if data is already in PlatformOverview format (has been transformed)
+  if (instagramData && instagramData.platform && instagramData.pageName && typeof instagramData.platform === 'string') {
+    // Data is already transformed, return as-is
+    return instagramData as PlatformOverview;
+  }
+  
+  // Data is in raw format, transform it
+  return DataTransformationService.getInstance().transformInstagramData(instagramData);
+};
+
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   meta,
   linkedInData,
   xData,
+  instagramDataProp,
   isExpanded,
   onToggleExpand,
 }) => {
@@ -56,6 +72,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const progressiveError = useSelector(selectProgressiveMetaError);
   
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
+  const instagramStats = useSelector(selectInstagramStats);
 
 
 
@@ -84,7 +101,16 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     linkedinDataArray.push(transformedLinkedIn);
   }
 
-  const instagramData: { instagramData: any }[] = [];
+  // Transform Instagram data
+  const transformedInstagram = instagramStats || instagramDataProp ? transformInstagramData(instagramStats || instagramDataProp) : null;
+  const instagramDataArray: PlatformOverview[] = [];
+  if (transformedInstagram) {
+    instagramDataArray.push(transformedInstagram);
+  } else if (instagramStats || instagramDataProp) {
+    console.log("📸 Instagram Data available but transformation failed:", instagramStats || instagramDataProp);
+  } else {
+    console.log("📸 No Instagram Data available");
+  }
   
   // Transform X data
   const transformedX = xData ? transformXData(xData) : null;
@@ -106,7 +132,7 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const data = [
     ...facebookData,
     ...linkedinDataArray,
-    ...instagramData,
+    ...instagramDataArray,
     ...xDataArray,
     ...tiktokData,
     ...websiteData,

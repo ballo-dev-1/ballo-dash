@@ -70,6 +70,36 @@ export interface XData {
   datePreset: string;
 }
 
+export interface InstagramData {
+  userInfo: {
+    username: string;
+    id: string;
+    platform: string;
+    biography?: string;
+  };
+  metrics: {
+    followers: number;
+    reach: number;
+    threadsViews: number;
+    websiteClicks: number;
+    profileViews: number;
+    accountsEngaged: number;
+    totalInteractions: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    replies: number;
+    followsAndUnfollows: number;
+    profileLinksTaps: number;
+    views: number;
+    contentViews: number;
+  };
+  since?: string;
+  until?: string;
+  datePreset?: string;
+}
+
 export interface LinkedInData {
   organizationId: string;
   organizationName: string;
@@ -353,6 +383,66 @@ class DataTransformationService {
       pageFollowersCity: "Global",
       pageFollowersCountry: "Global",
       pageLikesValue: likes ? likes.toLocaleString() : "-",
+    };
+  }
+
+  /**
+   * Transform Instagram data to PlatformOverview format
+   */
+  public transformInstagramData(instagramData: InstagramData): PlatformOverview | null {
+    if (!instagramData) return null;
+
+    // Defensive check for required fields
+    if (!instagramData.userInfo?.username) {
+      return null;
+    }
+
+    const username = instagramData.userInfo.username;
+    const biography = instagramData.userInfo.biography || "";
+    const metrics = instagramData.metrics;
+
+    // Create a more descriptive page name that includes bio if available
+    const pageName = username;
+
+    return {
+      platform: "Instagram",
+      pageName: pageName || "Instagram Account",
+      page_fans: metrics.followers || "-",
+      page_follows: metrics.followers || "-",
+      "Reach (day)": metrics.reach || "-",
+      "Reach (week)": metrics.reach || "-",
+      "Reach (month)": metrics.reach || "-",
+      "Engagement (day)": metrics.totalInteractions || "-",
+      "Engagement (week)": metrics.totalInteractions || "-",
+      "Engagement (month)": metrics.totalInteractions || "-",
+      "CTA Clicks (day)": metrics.websiteClicks || "-",
+      "CTA Clicks (week)": metrics.websiteClicks || "-",
+      "CTA Clicks (month)": metrics.websiteClicks || "-",
+      engagement: metrics.totalInteractions || "-",
+      last_post_date: "-", // Instagram posts are fetched separately
+    };
+  }
+
+  /**
+   * Transform Instagram data for Audience view
+   */
+  public transformInstagramDataForAudience(instagramData: InstagramData): PlatformAudienceOverview | null {
+    if (!instagramData) return null;
+
+    // Defensive check for required fields
+    if (!instagramData.userInfo?.username) {
+      return null;
+    }
+
+    const username = instagramData.userInfo.username;
+    const metrics = instagramData.metrics;
+
+    return {
+      platform: "Instagram",
+      pageName: username || "Instagram Account",
+      pageFollowersCity: "Global",
+      pageFollowersCountry: "Global",
+      pageLikesValue: metrics.likes ? metrics.likes.toLocaleString() : "-",
     };
   }
 }

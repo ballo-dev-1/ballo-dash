@@ -10,6 +10,7 @@ import { metaService } from "@/services/metaService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
 import { fetchMetaStats } from "@/toolkit/metaData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
+import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
 import { AppDispatch } from "@/toolkit";
@@ -70,6 +71,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             const autoFetchDataForIntegration = async (integration: any) => {
               try {
                 
+                console.log(`🔍 Processing integration: ${integration.type} (status: ${integration.status})`);
+                
                 if (integration.type === 'LINKEDIN') {
                   // For now, we'll use a default organization ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
@@ -95,31 +98,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
                   }
                 }
-                } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
+                } else if (integration.type === 'FACEBOOK') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
-                  const defaultPageId = 'me'; // This should come from your database
-                  
+                } else if (integration.type === 'INSTAGRAM') {
+                  console.log(`📸 Processing Instagram integration for: ${integration.type}`);
                   try {
-                                      await dispatch(fetchMetaStats({
-                    pageId: defaultPageId,
-                    platform: integration.type.toLowerCase(),
-                    since: '',
-                    until: '',
-                    datePreset: 'last_30_days'
-                  })).unwrap();
-                  
-                  toast.success(`${integration.type} data loaded successfully`);
-                } catch (error: any) {
-                  // Provide more specific error messages based on the error
-                  if (error.message?.includes('access token not found')) {
-                    toast.error(`${integration.type} integration not set up. Please configure your ${integration.type} integration first.`);
-                  } else if (error.message?.includes('Unauthorized')) {
-                    toast.error(`${integration.type} integration token expired. Please refresh your ${integration.type} integration.`);
-                  } else {
-                    toast.error(`Failed to load ${integration.type} data: ${error.message || 'Unknown error'}`);
+                    await dispatch(fetchInstagramStats({
+                      platform: 'instagram',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    toast.success('Instagram data loaded successfully');
+                  } catch (error: any) {
+                    console.error(`❌ Instagram error:`, error);
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`Instagram integration not set up. Please configure your Instagram integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`Instagram integration token expired. Please refresh your Instagram integration.`);
+                    } else {
+                      toast.error(`Failed to load Instagram data: ${error.message || 'Unknown error'}`);
+                    }
                   }
-                }
                 } else if (integration.type === 'X') {
                   // For X, we'll use the handle from the integration if available, or a default
                   // TODO: Get this from social profiles when they're properly configured
@@ -161,6 +163,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               integration.status === 'CONNECTED' && 
               (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM' || integration.type === 'X')
             );
+
+            console.log(`🔍 Found ${connectedIntegrations.length} connected integrations:`, connectedIntegrations.map(i => ({ type: i.type, status: i.status })));
 
             // Auto-fetch data for all CONNECTED integrations in parallel
             if (connectedIntegrations.length > 0) {
