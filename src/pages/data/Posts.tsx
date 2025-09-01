@@ -11,7 +11,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import PostsTable from "./tables/PostsTable";
 import TopPosts from "./tables/TopPosts";
-import { fetchMetaPosts, selectMetaPosts } from "@/toolkit/metaData/reducer";
+import { fetchFacebookPosts, selectFacebookPosts } from "@/toolkit/facebookData/reducer";
 import { useAppDispatch } from "@/toolkit/hooks";
 import { useSelector } from "react-redux";
 
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const Posts: React.FC<Props> = ({ data }) => {
-  const metaPosts = useSelector(selectMetaPosts);
+  const facebookPosts = useSelector(selectFacebookPosts);
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
@@ -44,7 +44,7 @@ const Posts: React.FC<Props> = ({ data }) => {
             isExpanded={!!expandedCols[tableKey1]}
             onToggleExpand={() => toggleExpand(tableKey1)}
             platform="facebook"
-            data={metaPosts}
+            data={facebookPosts}
           />
           <BasicTable3 />
         </Col>

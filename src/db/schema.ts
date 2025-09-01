@@ -109,6 +109,7 @@ export const integrations = pgTable(
     refreshToken: text("refresh_token"),
     expiresAt: timestamp("expires_at"),
     lastSyncedAt: timestamp("last_synced_at"),
+    accountId: text("account_id"), // Platform-specific account ID (e.g., Instagram business account ID, Facebook page ID)
     metadata: jsonb("metadata"),
     companyId: uuid("company_id")
       .notNull()
@@ -160,7 +161,39 @@ export const users = pgTable(
 
 
 
-// 7. MARKETING PLANS TABLE
+// 7. SOCIAL MEDIA DATA CACHE TABLE
+export const socialMediaDataCache = pgTable(
+  "social_media_data_cache",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    platform: integrationTypeEnum("platform").notNull(),
+    profileId: text("profile_id").notNull(), // e.g., LinkedIn org ID, X username, Facebook page ID
+    data: jsonb("data").notNull(), // The actual social media data
+    lastFetchedAt: timestamp("last_fetched_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(), // When this cache entry expires
+    fetchStatus: text("fetch_status").default("SUCCESS").notNull(), // SUCCESS, ERROR, PENDING
+    errorMessage: text("error_message"), // Store error details if fetch failed
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (socialMediaDataCache) => ({
+    uniqueCompanyPlatformProfile: unique("unique_cache_company_platform_profile").on(
+      socialMediaDataCache.companyId,
+      socialMediaDataCache.platform,
+      socialMediaDataCache.profileId
+    ),
+    companyPlatformIndex: index("cache_company_platform_idx").on(
+      socialMediaDataCache.companyId,
+      socialMediaDataCache.platform
+    ),
+    expiresAtIndex: index("cache_expires_at_idx").on(socialMediaDataCache.expiresAt),
+  })
+);
+
+// 8. MARKETING PLANS TABLE
 export const marketingPlans = pgTable(
   "marketing_plans",
   {

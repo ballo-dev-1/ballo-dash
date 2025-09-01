@@ -22,30 +22,7 @@ interface XStats {
   [key: string]: any;
 }
 
-// New interface for progressive X updates
-interface ProgressiveXStats {
-  username: string;
-  userId?: string;
-  name?: string;
-  description?: string;
-  profileImageUrl?: string;
-  verified?: boolean;
-  platform?: string;
-  metrics: {
-    [metricName: string]: {
-      [period: string]: {
-        values: Array<{ value: number; endTime: string | null }>;
-        title: string;
-        description: string;
-      };
-    };
-  };
-  since: string;
-  until: string;
-  datePreset: string;
-  loadingMetrics: string[]; // Track which metrics are still loading
-  completedMetrics: string[]; // Track which metrics are completed
-}
+
 
 interface XPost {
   id: string;
@@ -59,29 +36,50 @@ interface XPostsResponse {
   posts: XPost[];
 }
 
+interface ProgressiveXStats {
+  username: string;
+  platform: string;
+  userId: string;
+  name: string;
+  description: string;
+  profileImageUrl: string;
+  verified: boolean;
+  followers: number;
+  following: number;
+  tweetCount: number;
+  listedCount: number;
+  likeCount: number;
+  mediaCount: number;
+  since: string;
+  until: string;
+  datePreset: string;
+  loadingMetrics: string[];
+  completedMetrics: string[];
+}
+
 interface XState {
   stats: XStats | null;
-  progressiveStats: ProgressiveXStats | null;
   posts: XPostsResponse | null;
+  progressiveStats: ProgressiveXStats | null;
   statusStats: "idle" | "loading" | "succeeded" | "failed";
-  statusProgressiveStats: "idle" | "loading" | "succeeded" | "failed";
   statusPosts: "idle" | "loading" | "succeeded" | "failed";
+  statusProgressiveStats: "idle" | "loading" | "succeeded" | "failed";
   errorStats: string | null;
-  errorProgressiveStats: string | null;
   errorPosts: string | null;
+  errorProgressiveStats: string | null;
 }
 
 // --- Initial State ---
 const initialState: XState = {
   stats: null,
-  progressiveStats: null,
   posts: null,
+  progressiveStats: null,
   statusStats: "idle",
-  statusProgressiveStats: "idle",
   statusPosts: "idle",
+  statusProgressiveStats: "idle",
   errorStats: null,
-  errorProgressiveStats: null,
   errorPosts: null,
+  errorProgressiveStats: null,
 };
 
 // --- Thunks ---
@@ -92,20 +90,30 @@ export const fetchXStats = createAsyncThunk<
 >(
   "x/fetchStats",
   async ({ username, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
-    console.log("\n" + "=".repeat(60));
-    console.log("🐦 X REDUX THUNK: fetchXStats STARTED");
-    console.log("=".repeat(60));
-    console.log("📅 Timestamp:", new Date().toISOString());
-    console.log("📋 Parameters:", { username, platform, since, until, datePreset });
-    
     let state = getState();
-    console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
-    console.log("Current Redux state - integration status:", state.integrations.loading);
+
+
 
     try {
-      // Fetch X user data from the correct endpoint
+      // First, try to get cached data immediately for instant display
+      const cachedUrl = `/api/data/x/cached-stats?username=${username}&platform=${platform}`;
+      
+      let cachedResponse;
+      try {
+        cachedResponse = await fetch(cachedUrl);
+        if (cachedResponse.ok) {
+          const cachedData = await cachedResponse.json();
+          if (cachedData._cached) {
+            // Return cached data immediately, but continue fetching fresh data
+            // This implements the stale-while-revalidate pattern
+          }
+        }
+      } catch (cacheError) {
+        // No cached data available, fetching fresh data only
+      }
+
+      // Now fetch fresh data
       const url = `/api/data/x/stats?username=${username}&platform=${platform}&since=${since}&until=${until}&date_preset=${datePreset}`;
-      console.log("🌐 About to call X API endpoint:", url);
       
       const response = await fetch(url);
 
@@ -115,7 +123,6 @@ export const fetchXStats = createAsyncThunk<
       }
 
       const data = await response.json();
-      console.log("✅ X API response:", data);
 
       // Transform the API response to match our interface
       const transformedStats: XStats = {
@@ -136,11 +143,54 @@ export const fetchXStats = createAsyncThunk<
         datePreset
       };
 
-      console.log("✅ X stats transformed successfully:", transformedStats);
       return transformedStats;
 
     } catch (error: any) {
-      console.error("❌ X REDUX THUNK: Error fetching X stats:", error);
+      // If fresh data fetch fails, try to return cached data as fallback
+      try {
+        const cachedUrl = `/api/data/x/cached-stats?username=${username}&platform=${platform}`;
+        const cachedResponse = await fetch(cachedUrl);
+        
+        if (cachedResponse.ok) {
+          const cachedData = await cachedResponse.json();
+          if (cachedData._cached && cachedData._fetchStatus === 'SUCCESS') {
+
+            
+            // Transform cached data to match XStats interface
+            const transformedCachedStats: XStats = {
+              username: cachedData.userInfo.username,
+              userId: cachedData.userInfo.id,
+              name: cachedData.userInfo.name,
+              description: cachedData.userInfo.description || "",
+              profileImageUrl: cachedData.userInfo.profileImageUrl || "",
+              verified: cachedData.userInfo.verified || false,
+              followers: cachedData.metrics.followers || 0,
+              following: cachedData.metrics.following || 0,
+              tweetCount: cachedData.metrics.tweetCount || 0,
+              listedCount: cachedData.metrics.listedCount || 0,
+              likeCount: cachedData.metrics.likeCount || 0,
+              mediaCount: cachedData.metrics.mediaCount || 0,
+              since,
+              until,
+              datePreset
+            };
+            
+            // Add cache metadata
+            (transformedCachedStats as any)._cached = true;
+            (transformedCachedStats as any)._fetchStatus = 'SUCCESS';
+            (transformedCachedStats as any)._lastFetchedAt = cachedData._lastFetchedAt;
+            (transformedCachedStats as any)._message = "Showing cached data due to fresh data fetch failure";
+            
+            return transformedCachedStats;
+          }
+        } else if (cachedResponse.status === 404) {
+          // No cached data available
+        }
+      } catch (cacheError) {
+        // Failed to fallback to cached data
+      }
+      
+      // If no cached data available, throw the original error
       throw error;
     }
   }
@@ -153,13 +203,10 @@ const xDataSlice = createSlice({
   reducers: {
     clearXStats: (state) => {
       state.stats = null;
-      state.progressiveStats = null;
       state.posts = null;
       state.statusStats = "idle";
-      state.statusProgressiveStats = "idle";
       state.statusPosts = "idle";
       state.errorStats = null;
-      state.errorProgressiveStats = null;
       state.errorPosts = null;
     },
     setXStats: (state, action) => {
@@ -172,6 +219,93 @@ const xDataSlice = createSlice({
       state.statusPosts = "succeeded";
       state.errorPosts = null;
     },
+    // Progressive update actions
+    initializeProgressiveXStats: (state, action) => {
+      const { username, platform, since, until, datePreset, loadingMetrics } = action.payload;
+      state.progressiveStats = {
+        username,
+        platform,
+        since,
+        until,
+        datePreset,
+        loadingMetrics: loadingMetrics || [],
+        completedMetrics: [],
+        userId: "",
+        name: "",
+        description: "",
+        profileImageUrl: "",
+        verified: false,
+        followers: 0,
+        following: 0,
+        tweetCount: 0,
+        listedCount: 0,
+        likeCount: 0,
+        mediaCount: 0
+      };
+      state.statusProgressiveStats = "loading";
+      state.errorProgressiveStats = null;
+    },
+    updateXUserInfo: (state, action) => {
+      if (state.progressiveStats) {
+        state.progressiveStats.userId = action.payload.userId || "";
+        state.progressiveStats.name = action.payload.name || "";
+        state.progressiveStats.description = action.payload.description || "";
+        state.progressiveStats.profileImageUrl = action.payload.profileImageUrl || "";
+        state.progressiveStats.verified = action.payload.verified || false;
+      }
+    },
+    startXMetricFetch: (state, action) => {
+      const metric = action.payload;
+      if (state.progressiveStats) {
+        state.progressiveStats.loadingMetrics.push(metric);
+      }
+    },
+    updateXMetric: (state, action) => {
+      const { metric, data } = action.payload;
+      
+      if (state.progressiveStats) {
+        // Remove from loading
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
+        // Add to completed
+        if (!state.progressiveStats.completedMetrics.includes(metric)) {
+          state.progressiveStats.completedMetrics.push(metric);
+        }
+        // Update metrics data
+        switch (metric) {
+          case "followers":
+            state.progressiveStats.followers = data.followers || 0;
+            break;
+          case "following":
+            state.progressiveStats.following = data.following || 0;
+            break;
+          case "tweets":
+            state.progressiveStats.tweetCount = data.tweetCount || 0;
+            break;
+          case "engagement":
+            state.progressiveStats.likeCount = data.likeCount || 0;
+            state.progressiveStats.listedCount = data.listedCount || 0;
+            state.progressiveStats.mediaCount = data.mediaCount || 0;
+            break;
+        }
+      }
+    },
+    failXMetric: (state, action) => {
+      const { metric, error } = action.payload;
+      if (state.progressiveStats) {
+        // Remove from loading
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
+      }
+    },
+    completeProgressiveXFetch: (state) => {
+      if (state.progressiveStats) {
+        state.statusProgressiveStats = "succeeded";
+      }
+    },
+    resetProgressiveXStats: (state) => {
+      state.progressiveStats = null;
+      state.statusProgressiveStats = "idle";
+      state.errorProgressiveStats = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -193,18 +327,31 @@ const xDataSlice = createSlice({
 });
 
 // --- Actions ---
-export const { clearXStats, setXStats, setXPosts } = xDataSlice.actions;
+export const { 
+  clearXStats, 
+  setXStats, 
+  setXPosts,
+  initializeProgressiveXStats,
+  updateXUserInfo,
+  startXMetricFetch,
+  updateXMetric,
+  failXMetric,
+  completeProgressiveXFetch,
+  resetProgressiveXStats
+} = xDataSlice.actions;
 
 // --- Selectors ---
 export const selectXStats = (state: RootState) => state.xData.stats;
-export const selectXProgressiveStats = (state: RootState) => state.xData.progressiveStats;
 export const selectXPosts = (state: RootState) => state.xData.posts;
 export const selectXStatsStatus = (state: RootState) => state.xData.statusStats;
-export const selectXProgressiveStatsStatus = (state: RootState) => state.xData.statusProgressiveStats;
 export const selectXPostsStatus = (state: RootState) => state.xData.statusPosts;
 export const selectXStatsError = (state: RootState) => state.xData.errorStats;
-export const selectXProgressiveStatsError = (state: RootState) => state.xData.errorProgressiveStats;
 export const selectXPostsError = (state: RootState) => state.xData.errorPosts;
+
+// Progressive selectors
+export const selectProgressiveXStats = (state: RootState) => state.xData.progressiveStats;
+export const selectProgressiveXStatus = (state: RootState) => state.xData.statusProgressiveStats;
+export const selectProgressiveXError = (state: RootState) => state.xData.errorProgressiveStats;
 
 // --- Reducer ---
 export default xDataSlice.reducer;

@@ -3,8 +3,9 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/toolkit';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
-import { fetchMetaStats } from '@/toolkit/metaData/reducer';
+import { fetchFacebookStats } from '@/toolkit/facebookData/reducer';
 import { fetchXStats } from '@/toolkit/xData/reducer';
+import { fetchInstagramStats } from '@/toolkit/instagramData/reducer';
 import { useSelector } from 'react-redux';
 import { selectIntegrations } from '@/toolkit/Integrations/reducer';
 import { useIntegrations } from './useIntegrations';
@@ -16,10 +17,9 @@ export const useAutoDataRefresh = () => {
   const hasRefreshed = useRef(false); // Prevent multiple refreshes
   const refreshCount = useRef(0); // Track refresh attempts
   
-  const refreshDataForIntegration = useCallback(async (integration: any) => {
+    const refreshDataForIntegration = useCallback(async (integration: any) => {
     try {
       refreshCount.current++;
-      console.log(`🔄 Auto-refresh: ${integration.type} (attempt #${refreshCount.current})`);
       
       if (integration.type === 'LINKEDIN') {
         // For now, we'll use a default organization ID since we don't have social profiles set up yet
@@ -34,13 +34,12 @@ export const useAutoDataRefresh = () => {
           datePreset: 'last_30_days'
         })).unwrap();
         
-        console.log('✅ Auto-refresh: LinkedIn data refreshed successfully');
-      } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
+      } else if (integration.type === 'FACEBOOK') {
         // For now, we'll use a default page ID since we don't have social profiles set up yet
         // TODO: Get this from social profiles when they're properly configured
         const defaultPageId = 'me'; // This should come from your database
         
-        await dispatch(fetchMetaStats({
+        await dispatch(fetchFacebookStats({
           pageId: defaultPageId,
           platform: integration.type.toLowerCase(),
           since: '',
@@ -48,30 +47,34 @@ export const useAutoDataRefresh = () => {
           datePreset: 'last_30_days'
         })).unwrap();
         
-        console.log(`✅ Auto-refresh: ${integration.type} data refreshed successfully`);
+      } else if (integration.type === 'INSTAGRAM') {
+        // Instagram uses account ID-based fetching, no username needed
+        await dispatch(fetchInstagramStats({
+          platform: 'instagram',
+          since: '',
+          until: '',
+          datePreset: 'last_30_days'
+        })).unwrap();
+        
       } else if (integration.type === 'X') {
         // For X, we'll use the handle from the integration if available, or a default
         const username = integration.handle || 'GeorgeMsapenda'; // Default username, should come from integration handle
         
-                  try {
-            await dispatch(fetchXStats({
-              username,
-              platform: integration.type.toLowerCase(),
-              since: '',
-              until: '',
-              datePreset: 'last_30_days'
-            })).unwrap();
+        try {
+          await dispatch(fetchXStats({
+            username,
+            platform: integration.type.toLowerCase(),
+            since: '',
+            until: '',
+            datePreset: 'last_30_days'
+          })).unwrap();
           
-          console.log(`✅ Auto-refresh: ${integration.type} data refreshed successfully`);
         } catch (error) {
-          console.warn(`⚠️ Auto-refresh: X API call failed for ${username}:`, error);
           // Continue with other integrations even if X fails
         }
-      } else {
-        console.log(`ℹ️ Auto-refresh: Not implemented for platform: ${integration.type}`);
       }
     } catch (error) {
-      console.warn(`⚠️ Auto-refresh: Failed for ${integration.type}:`, error);
+      // Failed to refresh data
     }
   }, [dispatch]);
 
@@ -89,24 +92,10 @@ export const useAutoDataRefresh = () => {
     if (connectedIntegrations.length === 0) {
       return;
     }
-
-    console.log(`🚀 Auto-refresh: Starting for ${connectedIntegrations.length} CONNECTED integrations`);
     
     // Refresh data for all CONNECTED integrations in parallel
     const refreshPromises = connectedIntegrations.map(refreshDataForIntegration);
-    const results = await Promise.allSettled(refreshPromises);
-    
-    // Log results
-    results.forEach((result, index) => {
-      const integration = connectedIntegrations[index];
-      if (result.status === 'fulfilled') {
-        console.log(`✅ Auto-refresh: Completed for ${integration.type}`);
-      } else {
-        console.warn(`⚠️ Auto-refresh: Failed for ${integration.type}:`, result.reason);
-      }
-    });
-    
-    console.log('🎯 Auto-refresh: All integrations completed');
+    await Promise.allSettled(refreshPromises);
   }, [integrations, refreshDataForIntegration]);
 
   // Auto-refresh when component mounts and integrations are available AND initialized
@@ -118,7 +107,6 @@ export const useAutoDataRefresh = () => {
 
     // Wait for integrations to be properly initialized and available
     if (integrations && integrations.length > 0 && isInitialized) {
-      console.log('🚀 Auto-refresh: Starting auto-refresh process');
       hasRefreshed.current = true;
       refreshAllConnectedIntegrations();
     }

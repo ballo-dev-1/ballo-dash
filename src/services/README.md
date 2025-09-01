@@ -8,7 +8,7 @@ This directory contains centralized services that eliminate duplicate API calls 
 - **CompanyService**: Centralizes company data fetching with caching
 - **UserService**: Centralizes user data fetching with caching  
 - **LinkedInService**: Consolidates all LinkedIn API calls
-- **MetaService**: Optimizes Facebook/Meta API calls
+- **FacebookService**: Optimizes Facebook API calls
 - **IntegrationsService**: Unifies integration-related API calls
 
 ### **Benefits**
@@ -53,7 +53,7 @@ function MyComponent() {
 | CompanyService | 5 minutes | Company data rarely changes |
 | UserService | 5 minutes | User data rarely changes |
 | LinkedInService | 10 minutes | LinkedIn has rate limits |
-| MetaService | 15 minutes | Facebook has strict rate limits |
+| FacebookService | 15 minutes | Facebook has strict rate limits |
 | IntegrationsService | 10 minutes | Integration status changes occasionally |
 
 ## 🚫 **What NOT to Do**
@@ -81,7 +81,7 @@ userService.clearCache();
 
 // Clear specific data types
 linkedinService.clearMetricCache(orgId, 'followers');
-metaService.clearPageCache('facebook', pageId);
+facebookService.clearPageCache('facebook', pageId);
 ```
 
 ### **Automatic Cache Invalidation**
@@ -108,7 +108,7 @@ App Load: 15 API calls
 - /api/user (3x)  
 - /api/integrations (2x)
 - /api/data/linkedin/* (4x)
-- /api/data/meta/* (3x)
+- /api/data/facebook/* (3x)
 ```
 
 ### **After (Centralized Services)**
@@ -118,7 +118,7 @@ App Load: 5 API calls
 - /api/user (1x, cached)
 - /api/integrations (1x, cached)
 - /api/data/linkedin/* (1x, cached)
-- /api/data/meta/* (1x, cached)
+- /api/data/facebook/* (1x, cached)
 ```
 
 **Result: 67% reduction in API calls, 3-5x faster loading**

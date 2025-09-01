@@ -17,7 +17,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectCompany } from '@/toolkit/Company/reducer';
 import { integrationsService } from '@/services/integrationsService';
 import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
-import { fetchMetaStats } from '@/toolkit/metaData/reducer';
+import { fetchFacebookStats } from '@/toolkit/facebookData/reducer';
 import { AppDispatch } from '@/toolkit';
 import { 
   createIntegration, 
@@ -40,6 +40,7 @@ interface Integration {
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string | null;
+  accountId?: string; // Platform-specific account ID
   metadata?: any;
   createdAt: string;
   updatedAt: string;
@@ -59,6 +60,7 @@ interface NewIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
+  accountId?: string; // Platform-specific account ID
   metadata?: any;  
 }
 
@@ -81,6 +83,7 @@ const IntegrationManagementModal: React.FC = () => {
     accessToken: '',
     refreshToken: '',
     expiresAt: '',
+    accountId: '',
     metadata: undefined
   });
   const [creating, setCreating] = useState(false);
@@ -161,7 +164,11 @@ const IntegrationManagementModal: React.FC = () => {
         accessToken: integration.accessToken ? '***' : 'empty',
         refreshToken: integration.refreshToken ? '***' : 'empty',
         status: integration.status,
-        expiresAt: integration.expiresAt
+        handle: integration.handle || 'empty',
+        appId: integration.appId ? '***' : 'empty',
+        appSecret: integration.appSecret ? '***' : 'empty',
+        expiresAt: integration.expiresAt,
+        accountId: integration.accountId || 'empty'
       });
 
       // Call API to update integration using modal-specific endpoint
@@ -170,7 +177,10 @@ const IntegrationManagementModal: React.FC = () => {
         refreshToken: integration.refreshToken,
         status: integration.status,
         handle: integration.handle,
-        expiresAt: integration.expiresAt
+        appId: integration.appId,
+        appSecret: integration.appSecret,
+        expiresAt: integration.expiresAt,
+        accountId: integration.accountId
       });
 
       console.log('✅ Save successful, result:', result);
@@ -195,7 +205,10 @@ const IntegrationManagementModal: React.FC = () => {
           refreshToken: result.refreshToken,
           status: result.status,
           handle: result.handle,
-          expiresAt: result.expiresAt
+          appId: result.appId,
+          appSecret: result.appSecret,
+          expiresAt: result.expiresAt,
+          accountId: result.accountId
         }
       }));
       
@@ -345,6 +358,7 @@ const IntegrationManagementModal: React.FC = () => {
         accessToken: newIntegration.accessToken,
         refreshToken: newIntegration.refreshToken || null,
         expiresAt: newIntegration.expiresAt || null,
+        accountId: newIntegration.accountId || undefined,
         metadata: newIntegration.metadata || undefined,
         companyId: company.id
       });
@@ -384,6 +398,7 @@ const IntegrationManagementModal: React.FC = () => {
         accessToken: '',
         refreshToken: '',
         expiresAt: '',
+        accountId: '',
         metadata: undefined
       });
       
@@ -405,7 +420,7 @@ const IntegrationManagementModal: React.FC = () => {
             toast.success('LinkedIn data fetched successfully for new integration!');
           } else if (createdIntegration.type === 'FACEBOOK' || createdIntegration.type === 'INSTAGRAM') {
             // Fetch Meta data using Redux action
-            await dispatch(fetchMetaStats({
+            await dispatch(fetchFacebookStats({
               pageId: 'me', // Default page ID - should come from social profiles
               platform: createdIntegration.type.toLowerCase(),
               since: '',
@@ -761,6 +776,7 @@ const IntegrationManagementModal: React.FC = () => {
                   <th>App Secret</th>
                   <th>Access Token</th>
                   <th>Refresh Token</th>
+                  <th>Account ID</th>
                   <th>Expires At</th>
                   <th>Last Updated</th>
                   <th>Actions</th>
@@ -877,6 +893,26 @@ const IntegrationManagementModal: React.FC = () => {
                     </td>
                     <td>
                       {integration.isEditing ? (
+                        <Form.Control
+                          type="text"
+                          value={integration.accountId || ''}
+                          onChange={(e) => handleInputChange(integration.id, 'accountId', e.target.value)}
+                          size="sm"
+                          placeholder="Enter account ID"
+                          autoComplete="off"
+                        />
+                      ) : (
+                        <small className="text-muted">
+                          {integration.accountId ? (
+                            <span className="text-info">{integration.accountId}</span>
+                          ) : (
+                            'Not set'
+                          )}
+                        </small>
+                      )}
+                    </td>
+                    <td>
+                      {integration.isEditing ? (
                         <div className="d-flex gap-1 align-items-center">
                           <Form.Control
                             type="date"
@@ -963,7 +999,7 @@ const IntegrationManagementModal: React.FC = () => {
                 
                 {integrations.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="text-center text-muted py-4">
+                    <td colSpan={11} className="text-center text-muted py-4">
                       No integrations found. Click "Add New Integration" to get started.
                     </td>
                   </tr>
@@ -1165,6 +1201,22 @@ const IntegrationManagementModal: React.FC = () => {
               />
               <Form.Text className="text-muted">
                 Optional refresh token for token renewal
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Account ID</Form.Label>
+              <Form.Control
+                type="text"
+                value={newIntegration.accountId}
+                onChange={(e) => setNewIntegration(prev => ({ ...prev, accountId: e.target.value }))}
+                placeholder="Enter account ID (optional)"
+                autoComplete="off"
+                data-lpignore="true"
+                data-form-type="other"
+              />
+              <Form.Text className="text-muted">
+                Platform-specific account ID (e.g., Instagram business account ID, Facebook page ID)
               </Form.Text>
             </Form.Group>
 

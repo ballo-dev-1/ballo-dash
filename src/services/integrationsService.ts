@@ -6,9 +6,13 @@ interface Integration {
   type: string;
   status: string;
   handle?: string;
+  appId?: string;
+  appSecret?: string;
   accessToken: string;
   refreshToken: string | null;
   expiresAt: string | null;
+  accountId?: string;
+  metadata?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -146,6 +150,7 @@ class IntegrationsService {
     accessToken: string;
     refreshToken?: string | null;
     expiresAt?: string | null;
+    accountId?: string;
     metadata?: any;
     companyId: string;
   }): Promise<Integration> {
@@ -186,7 +191,10 @@ class IntegrationsService {
     refreshToken?: string | null;
     status?: string;
     handle?: string;
+    appId?: string;
+    appSecret?: string;
     expiresAt?: string | null;
+    accountId?: string;
   }): Promise<Integration> {
     try {
       console.log('IntegrationsService: Updating integration:', integrationId);
@@ -230,7 +238,10 @@ class IntegrationsService {
     refreshToken?: string | null;
     status?: string;
     handle?: string;
+    appId?: string;
+    appSecret?: string;
     expiresAt?: string | null;
+    accountId?: string;
   }): Promise<Integration> {
     try {
       console.log('IntegrationsService: Updating integration for modal:', integrationId);

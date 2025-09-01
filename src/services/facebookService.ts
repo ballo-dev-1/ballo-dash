@@ -1,4 +1,4 @@
-interface MetaPageInfo {
+interface FacebookPageInfo {
   id: string;
   name: string;
   category?: string;
@@ -6,48 +6,48 @@ interface MetaPageInfo {
   profilePictureUrl?: string;
 }
 
-interface MetaPost {
+interface FacebookPost {
   id: string;
   message?: string;
   created_time: string;
   insights?: Record<string, any>;
 }
 
-interface MetaMetrics {
+interface FacebookMetrics {
   pageImpressions?: number;
   pageEngagedUsers?: number;
   pagePostEngagements?: number;
   pageActionsPostReactionsTotal?: number;
 }
 
-class MetaService {
-  private static instance: MetaService;
-  private pageInfo: Record<string, MetaPageInfo> = {};
-  private posts: Record<string, MetaPost[]> = {};
-  private metrics: Record<string, MetaMetrics> = {};
+class FacebookService {
+  private static instance: FacebookService;
+  private pageInfo: Record<string, FacebookPageInfo> = {};
+  private posts: Record<string, FacebookPost[]> = {};
+  private metrics: Record<string, FacebookMetrics> = {};
   private isLoading: Record<string, boolean> = {};
   private lastFetch: Record<string, number> = {};
   private readonly CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
   private constructor() {}
 
-  public static getInstance(): MetaService {
-    if (!MetaService.instance) {
-      MetaService.instance = new MetaService();
+  public static getInstance(): FacebookService {
+    if (!FacebookService.instance) {
+      FacebookService.instance = new FacebookService();
     }
-    return MetaService.instance;
+    return FacebookService.instance;
   }
 
   public async getPageInfo(pageId: string, platform: string = 'facebook'): Promise<MetaPageInfo | null> {
     const cacheKey = `pageInfo_${platform}_${pageId}`;
     
     if (this.pageInfo[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log('MetaService: Returning cached page info');
+      console.log('FacebookService: Returning cached page info');
       return this.pageInfo[cacheKey];
     }
 
     if (this.isLoading[cacheKey]) {
-      console.log('MetaService: Page info request already in progress, waiting...');
+      console.log('FacebookService: Page info request already in progress, waiting...');
       while (this.isLoading[cacheKey]) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -55,10 +55,10 @@ class MetaService {
     }
 
     try {
-      console.log('MetaService: Fetching page info...');
+      console.log('FacebookService: Fetching page info...');
       this.isLoading[cacheKey] = true;
       
-      const response = await fetch(`/api/data/meta/pageInfo?pageId=${pageId}&platform=${platform}`);
+      const response = await fetch(`/api/data/facebook/pageInfo?pageId=${pageId}&platform=${platform}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch page info: ${response.status}`);
@@ -68,10 +68,10 @@ class MetaService {
       this.pageInfo[cacheKey] = data;
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('MetaService: Page info stored in cache');
+      console.log('FacebookService: Page info stored in cache');
       return this.pageInfo[cacheKey];
     } catch (error) {
-      console.error('❌ MetaService: Error fetching page info:', error);
+      console.error('❌ FacebookService: Error fetching page info:', error);
       return null;
     } finally {
       this.isLoading[cacheKey] = false;
@@ -82,12 +82,12 @@ class MetaService {
     const cacheKey = `posts_${platform}_${pageId}`;
     
     if (this.posts[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log('MetaService: Returning cached posts');
+      console.log('FacebookService: Returning cached posts');
       return this.posts[cacheKey];
     }
 
     if (this.isLoading[cacheKey]) {
-      console.log('MetaService: Posts request already in progress, waiting...');
+      console.log('FacebookService: Posts request already in progress, waiting...');
       while (this.isLoading[cacheKey]) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -95,10 +95,10 @@ class MetaService {
     }
 
     try {
-      console.log('MetaService: Fetching posts...');
+      console.log('FacebookService: Fetching posts...');
       this.isLoading[cacheKey] = true;
       
-      const response = await fetch(`/api/data/meta/posts?pageId=${pageId}&platform=${platform}`);
+      const response = await fetch(`/api/data/facebook/posts?pageId=${pageId}&platform=${platform}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch posts: ${response.status}`);
@@ -108,10 +108,10 @@ class MetaService {
       this.posts[cacheKey] = data.posts || [];
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('MetaService: Posts stored in cache');
+      console.log('FacebookService: Posts stored in cache');
       return this.posts[cacheKey];
     } catch (error) {
-      console.error('❌ MetaService: Error fetching posts:', error);
+      console.error('❌ FacebookService: Error fetching posts:', error);
       return null;
     } finally {
       this.isLoading[cacheKey] = false;
@@ -122,14 +122,14 @@ class MetaService {
     const cacheKey = `metrics_${platform}_${pageId}_${metric}`;
     
     if (this.metrics[cacheKey] && this.isDataFresh(cacheKey)) {
-      console.log(`MetaService: Returning cached ${metric} metrics`);
+      console.log(`FacebookService: Returning cached ${metric} metrics`);
       return this.metrics[cacheKey];
     }
 
     try {
-      console.log(`MetaService: Fetching ${metric} metrics...`);
+      console.log(`FacebookService: Fetching ${metric} metrics...`);
       
-      const response = await fetch(`/api/data/meta/metric?pageId=${pageId}&metric=${metric}&platform=${platform}`);
+      const response = await fetch(`/api/data/facebook/metric?pageId=${pageId}&metric=${metric}&platform=${platform}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch ${metric} metrics: ${response.status}`);
@@ -139,18 +139,18 @@ class MetaService {
       this.metrics[cacheKey] = data;
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log(`MetaService: ${metric} metrics stored in cache`);
+      console.log(`FacebookService: ${metric} metrics stored in cache`);
       return this.metrics[cacheKey];
     } catch (error) {
-      console.error(`❌ MetaService: Error fetching ${metric} metrics:`, error);
+      console.error(`❌ FacebookService: Error fetching ${metric} metrics:`, error);
       return null;
     }
   }
 
-  public async getMultipleMetrics(pageId: string, metrics: string[], platform: string = 'facebook'): Promise<Record<string, MetaMetrics>> {
-    console.log(`MetaService: Fetching multiple metrics: ${metrics.join(', ')}`);
+    public async getMultipleMetrics(pageId: string, metrics: string[], platform: string = 'facebook'): Promise<Record<string, FacebookMetrics>> {
+    console.log(`FacebookService: Fetching multiple metrics: ${metrics.join(', ')}`);
     
-    const results: Record<string, MetaMetrics> = {};
+    const results: Record<string, FacebookMetrics> = {};
     
     // Fetch metrics in parallel for better performance
     const promises = metrics.map(async (metric) => {
@@ -169,14 +169,14 @@ class MetaService {
     const cacheKey = `stats_${platform}_${pageId}`;
     
     if (this.isDataFresh(cacheKey)) {
-      console.log('MetaService: Returning cached stats');
+      console.log('FacebookService: Returning cached stats');
       return null; // Stats are usually not cached for long
     }
 
     try {
-      console.log('MetaService: Fetching stats...');
+      console.log('FacebookService: Fetching stats...');
       
-      const response = await fetch(`/api/data/meta/stats?pageId=${pageId}&platform=${platform}`);
+      const response = await fetch(`/api/data/facebook/stats?pageId=${pageId}&platform=${platform}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch stats: ${response.status}`);
@@ -185,10 +185,10 @@ class MetaService {
       const data = await response.json();
       this.lastFetch[cacheKey] = Date.now();
       
-      console.log('MetaService: Stats fetched successfully');
+      console.log('FacebookService: Stats fetched successfully');
       return data;
     } catch (error) {
-      console.error('❌ MetaService: Error fetching stats:', error);
+      console.error('❌ FacebookService: Error fetching stats:', error);
       return null;
     }
   }
@@ -223,4 +223,4 @@ class MetaService {
   }
 }
 
-export const metaService = MetaService.getInstance();
+export const facebookService = FacebookService.getInstance();

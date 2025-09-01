@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState, AppDispatch } from "..";
 import { fetchIntegrations } from "../Integrations/reducer";
 
-interface MetaStats {
+interface FacebookStats {
   pageId: string;
   impressions: number;
   reach: number;
@@ -16,7 +16,7 @@ interface MetaStats {
 }
 
 // New interface for progressive updates
-interface ProgressiveMetaStats {
+interface ProgressiveFacebookStats {
   pageId: string;
   pageInfo?: { name: string; id: string };
   platform?: string;
@@ -49,9 +49,9 @@ interface PostsResponse {
   posts: Post[];
 }
 
-interface MetaState {
-  stats: MetaStats | null;
-  progressiveStats: ProgressiveMetaStats | null; // New progressive stats
+interface FacebookState {
+  stats: FacebookStats | null;
+  progressiveStats: ProgressiveFacebookStats | null; // New progressive stats
   posts: PostsResponse | null;
   pageName: string | null;
   statusStats: "idle" | "loading" | "succeeded" | "failed";
@@ -62,7 +62,7 @@ interface MetaState {
   errorPosts: string | null;
 }
 
-const initialState: MetaState = {
+const initialState: FacebookState = {
   stats: null,
   progressiveStats: null,
   posts: null,
@@ -75,9 +75,9 @@ const initialState: MetaState = {
   errorPosts: null,
 };
 
-// Thunk for fetching meta stats
-export const fetchMetaStats = createAsyncThunk<
-  MetaStats,
+// Thunk for fetching Facebook stats
+export const fetchFacebookStats = createAsyncThunk<
+  FacebookStats,
   {
     pageId: string;
     platform: string;
@@ -87,13 +87,13 @@ export const fetchMetaStats = createAsyncThunk<
   },
   { dispatch: AppDispatch; state: RootState }
 >(
-  "meta/fetchStats",
+  "facebook/fetchStats",
   async (
     { pageId, platform, since = "", until = "", datePreset = "" },
     { dispatch, getState }
   ) => {
     console.log("\n" + "=".repeat(60));
-    console.log("📘 META REDUX THUNK: fetchMetaStats STARTED");
+    console.log("📘 FACEBOOK REDUX THUNK: fetchFacebookStats STARTED");
     console.log("=".repeat(60));
     console.log("📅 Timestamp:", new Date().toISOString());
     console.log("📋 Parameters:", { pageId, platform, since, until, datePreset });
@@ -101,6 +101,8 @@ export const fetchMetaStats = createAsyncThunk<
     let state = getState();
     console.log("Current Redux state - integrations count:", state.integrations.integrations.length);
     console.log("Current Redux state - integration status:", state.integrations.loading);
+
+
 
     if (
       state.integrations.integrations.length === 0 &&
@@ -119,48 +121,48 @@ export const fetchMetaStats = createAsyncThunk<
       }
     }
 
-    const metaIntegration = state.integrations.integrations.find(
+    const facebookIntegration = state.integrations.integrations.find(
       (integration: { type: string }) =>
         integration.type === platform.toUpperCase()
     );
 
-    if (!metaIntegration) {
-      console.error("❌ No Meta integration found in Redux state");
+    if (!facebookIntegration) {
+      console.error("❌ No Facebook integration found in Redux state");
       console.log("Available integrations:", state.integrations.integrations.map((i: any) => ({ type: i.type, status: i.status })));
       console.log("Looking for platform:", platform.toUpperCase());
       console.log("=".repeat(60));
-      throw new Error("No Meta integration found");
+      throw new Error("No Facebook integration found");
     }
 
-    console.log("✅ Meta integration found:", metaIntegration.type);
-    console.log("🔑 Integration status:", metaIntegration.status);
-    console.log("🔑 Has access token:", !!metaIntegration.accessToken);
+    console.log("✅ Facebook integration found:", facebookIntegration.type);
+    console.log("🔑 Integration status:", facebookIntegration.status);
+    console.log("🔑 Has access token:", !!facebookIntegration.accessToken);
 
-    const accessToken = metaIntegration.accessToken;
+    const accessToken = facebookIntegration.accessToken;
 
-    const url = `/api/data/meta/stats?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`;
-    console.log("🌐 About to call Meta API endpoint:", url);
+    const url = `/api/data/facebook/stats?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`;
+    console.log("🌐 About to call Facebook API endpoint:", url);
     
     try {
       const res = await fetch(url);
-      console.log("📡 Meta API response status:", res.status);
-      console.log("📡 Meta API response ok:", res.ok);
+      console.log("📡 Facebook API response status:", res.status);
+      console.log("📡 Facebook API response ok:", res.ok);
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error("❌ Meta stats fetch failed:", errText);
+        console.error("❌ Facebook stats fetch failed:", errText);
         console.log("=".repeat(60));
-        throw new Error(`Failed to fetch Meta stats: ${errText}`);
+        throw new Error(`Failed to fetch Facebook stats: ${errText}`);
       }
 
       const result = await res.json();
-      console.log("✅ Meta API response received successfully");
+      console.log("✅ Facebook API response received successfully");
       console.log("📊 Response data keys:", Object.keys(result));
       console.log("📊 Page info:", result.pageInfo);
       console.log("📊 Metrics available:", Object.keys(result.metrics || {}));
       console.log("📊 Recent post:", result.recentPost ? "Available" : "None");
       
-      console.log("✅ SUCCESS: Meta data fetched and ready");
+      console.log("✅ SUCCESS: Facebook data fetched and ready");
       console.log("📊 Final result summary:", {
         platform: result.platform,
         pageName: result.pageInfo?.name,
@@ -170,7 +172,7 @@ export const fetchMetaStats = createAsyncThunk<
       console.log("=".repeat(60));
       return result;
     } catch (error) {
-      console.error("❌ ERROR in Meta thunk:", error);
+      console.error("❌ ERROR in Facebook thunk:", error);
       console.log("=".repeat(60));
       throw error;
     }
@@ -178,7 +180,7 @@ export const fetchMetaStats = createAsyncThunk<
 );
 
 // New progressive thunk for fetching metrics individually
-export const fetchMetaStatsProgressive = createAsyncThunk<
+export const fetchFacebookStatsProgressive = createAsyncThunk<
   void,
   {
     pageId: string;
@@ -189,18 +191,11 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
   },
   { dispatch: AppDispatch; state: RootState }
 >(
-  "meta/fetchStatsProgressive",
+  "facebook/fetchStatsProgressive",
   async (
     { pageId, platform, since = "", until = "", datePreset = "" },
     { dispatch, getState }
   ) => {
-    // console.log("=== fetchMetaStatsProgressive started ===");
-    // console.log("pageId:", pageId);
-    // console.log("platform:", platform);
-    // console.log("since:", since);
-    // console.log("until:", until);
-    // console.log("datePreset:", datePreset);
-    
     let state = getState();
 
     // Wait for integrations to be loaded if they're not already
@@ -251,7 +246,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
     //   accessToken: i.accessToken ? `${i.accessToken.substring(0, 20)}...` : 'NO_TOKEN'
     // })));
     // console.log("Looking for integration with type:", platform.toUpperCase());
-    // console.log("Found Meta integration:", integration ? {
+    // console.log("Found Facebook integration:", integration ? {
     //   id: integration.id,
     //   type: integration.type,
     //   accessToken: integration.accessToken ? `${integration.accessToken.substring(0, 20)}...` : 'NO_TOKEN'
@@ -284,7 +279,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
 
     // Initialize progressive stats
     console.log("Initializing progressive stats...");
-    dispatch(initializeProgressiveStats({
+            dispatch(initializeProgressiveFacebookStats({
       pageId,
       platform,
       since,
@@ -295,7 +290,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
     // Fetch page info first
     // console.log("Fetching page info...");
     const pageInfoRes = await fetch(
-      `/api/data/meta/pageInfo?platform=${platform.toLowerCase()}&pageId=${pageId}`
+      `/api/data/facebook/pageInfo?platform=${platform.toLowerCase()}&pageId=${pageId}`
     );
     
     if (pageInfoRes.ok) {
@@ -324,7 +319,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
         dispatch(startMetricFetch(metric));
         
         const res = await fetch(
-          `/api/data/meta/metric?platform=${platform.toLowerCase()}&pageId=${pageId}&metric=${metric}&since=${since}&until=${until}&datePreset=${datePreset}`
+          `/api/data/facebook/metric?platform=${platform.toLowerCase()}&pageId=${pageId}&metric=${metric}&since=${since}&until=${until}&datePreset=${datePreset}`
         );
 
         if (res.ok) {
@@ -345,7 +340,7 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
     try {
       // console.log("Fetching recent post...");
       const recentPostRes = await fetch(
-        `/api/data/meta/recentPost?platform=${platform.toLowerCase()}&pageId=${pageId}`
+        `/api/data/facebook/recentPost?platform=${platform.toLowerCase()}&pageId=${pageId}`
       );
       
       if (recentPostRes.ok) {
@@ -359,12 +354,12 @@ export const fetchMetaStatsProgressive = createAsyncThunk<
       console.error("Failed to fetch recent post:", error);
     }
     
-    console.log("=== fetchMetaStatsProgressive completed ===");
+    console.log("=== fetchFacebookStatsProgressive completed ===");
   }
 );
 
-// Thunk for fetching meta posts
-export const fetchMetaPosts = createAsyncThunk<
+// Thunk for fetching Facebook posts
+export const fetchFacebookPosts = createAsyncThunk<
   PostsResponse,
   {
     pageId: string;
@@ -375,7 +370,7 @@ export const fetchMetaPosts = createAsyncThunk<
   },
   { dispatch: AppDispatch; state: RootState }
 >(
-  "meta/fetchPosts",
+  "facebook/fetchPosts",
   async (
     { pageId, platform, since = "", until = "", datePreset = "" },
     { dispatch, getState }
@@ -396,34 +391,34 @@ export const fetchMetaPosts = createAsyncThunk<
       }
     }
 
-    const metaIntegration = state.integrations.integrations.find(
+    const facebookIntegration = state.integrations.integrations.find(
       (integration: { type: string }) =>
         integration.type === platform.toUpperCase()
     );
 
-    if (!metaIntegration) throw new Error("No Meta integration found");
+    if (!facebookIntegration) throw new Error("No Facebook integration found");
 
-    const accessToken = metaIntegration.accessToken;
+    const accessToken = facebookIntegration.accessToken;
 
     const res = await fetch(
-      `/api/data/meta/posts?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`
+      `/api/data/facebook/posts?platform=${platform.toLowerCase()}&pageId=${pageId}&since=${since}&until=${until}&date_preset=${datePreset}&limit=100`
     );
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`Failed to fetch Meta posts: ${errText}`);
+      throw new Error(`Failed to fetch Facebook posts: ${errText}`);
     }
 
     return await res.json();
   }
 );
 
-const metaSlice = createSlice({
-  name: "meta",
+const facebookSlice = createSlice({
+  name: "facebook",
   initialState,
   reducers: {
     // Progressive update actions
-    initializeProgressiveStats: (state, action) => {
+    initializeProgressiveFacebookStats: (state, action) => {
       const { pageId, platform, since, until, datePreset } = action.payload;
       state.progressiveStats = {
         pageId,
@@ -443,7 +438,18 @@ const metaSlice = createSlice({
         state.progressiveStats.pageInfo = action.payload;
       }
     },
+    updateFacebookUserInfo: (state, action) => {
+      if (state.progressiveStats) {
+        state.progressiveStats.pageInfo = action.payload;
+      }
+    },
     startMetricFetch: (state, action) => {
+      const metric = action.payload;
+      if (state.progressiveStats) {
+        state.progressiveStats.loadingMetrics.push(metric);
+      }
+    },
+    startFacebookMetricFetch: (state, action) => {
       const metric = action.payload;
       if (state.progressiveStats) {
         state.progressiveStats.loadingMetrics.push(metric);
@@ -464,12 +470,32 @@ const metaSlice = createSlice({
         // console.log(`Updated progressive stats for ${metric}:`, state.progressiveStats.metrics[metric]);
       }
     },
+    updateFacebookMetric: (state, action) => {
+      const { metric, data } = action.payload;
+      if (state.progressiveStats) {
+        // Remove from loading
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
+        // Add to completed
+        if (!state.progressiveStats.completedMetrics.includes(metric)) {
+          state.progressiveStats.completedMetrics.push(metric);
+        }
+        // Update metrics data
+        state.progressiveStats.metrics[metric] = data;
+      }
+    },
     failMetric: (state, action) => {
       const { metric, error } = action.payload;
       if (state.progressiveStats) {
         // Remove from loading
         state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
         console.error(`Failed to fetch metric ${metric}:`, error);
+      }
+    },
+    failFacebookMetric: (state, action) => {
+      const { metric, error } = action.payload;
+      if (state.progressiveStats) {
+        // Remove from loading
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
       }
     },
     updateRecentPost: (state, action) => {
@@ -481,84 +507,100 @@ const metaSlice = createSlice({
       if (state.progressiveStats) {
         state.statusProgressiveStats = "succeeded";
       }
+    },
+    completeProgressiveFacebookFetch: (state) => {
+      if (state.progressiveStats) {
+        state.statusProgressiveStats = "succeeded";
+      }
+    },
+    resetProgressiveFacebookStats: (state) => {
+      state.progressiveStats = null;
+      state.statusProgressiveStats = "idle";
+      state.errorProgressiveStats = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Meta Stats
-      .addCase(fetchMetaStats.pending, (state) => {
-        console.log("🔄 Meta Reducer: fetchMetaStats.pending - Setting status to loading");
+      // Facebook Stats
+      .addCase(fetchFacebookStats.pending, (state) => {
+        console.log("🔄 Facebook Reducer: fetchFacebookStats.pending - Setting status to loading");
         state.statusStats = "loading";
         state.errorStats = null;
       })
-      .addCase(fetchMetaStats.fulfilled, (state, action) => {
-        console.log("✅ Meta Reducer: fetchMetaStats.fulfilled - Setting stats data");
-        console.log("📊 Meta stats received:", action.payload);
+      .addCase(fetchFacebookStats.fulfilled, (state, action) => {
+        console.log("✅ Facebook Reducer: fetchFacebookStats.fulfilled - Setting stats data");
+        console.log("📊 Facebook stats received:", action.payload);
         state.statusStats = "succeeded";
         state.stats = action.payload;
       })
-      .addCase(fetchMetaStats.rejected, (state, action) => {
-        console.log("❌ Meta Reducer: fetchMetaStats.rejected - Setting error state");
+      .addCase(fetchFacebookStats.rejected, (state, action) => {
+        console.log("❌ Facebook Reducer: fetchFacebookStats.rejected - Setting error state");
         console.log("❌ Error:", action.error.message);
         state.statusStats = "failed";
-        state.errorStats = action.error.message || "Failed to load Meta stats";
+        state.errorStats = action.error.message || "Failed to load Facebook stats";
       })
 
-      // Progressive Meta Stats
-      .addCase(fetchMetaStatsProgressive.pending, (state) => {
+      // Progressive Facebook Stats
+      .addCase(fetchFacebookStatsProgressive.pending, (state) => {
         state.statusProgressiveStats = "loading";
         state.errorProgressiveStats = null;
       })
-      .addCase(fetchMetaStatsProgressive.fulfilled, (state) => {
+      .addCase(fetchFacebookStatsProgressive.fulfilled, (state) => {
         state.statusProgressiveStats = "succeeded";
       })
-      .addCase(fetchMetaStatsProgressive.rejected, (state, action) => {
+      .addCase(fetchFacebookStatsProgressive.rejected, (state, action) => {
         state.statusProgressiveStats = "failed";
-        state.errorProgressiveStats = action.error.message || "Failed to load Meta stats progressively";
+        state.errorProgressiveStats = action.error.message || "Failed to load Facebook stats progressively";
       })
 
-      // Meta Posts
-      .addCase(fetchMetaPosts.pending, (state) => {
+      // Facebook Posts
+      .addCase(fetchFacebookPosts.pending, (state) => {
         state.statusPosts = "loading";
         state.errorPosts = null;
       })
-      .addCase(fetchMetaPosts.fulfilled, (state, action) => {
+      .addCase(fetchFacebookPosts.fulfilled, (state, action) => {
         state.statusPosts = "succeeded";
         state.posts = action.payload;
       })
-      .addCase(fetchMetaPosts.rejected, (state, action) => {
+      .addCase(fetchFacebookPosts.rejected, (state, action) => {
         state.statusPosts = "failed";
-        state.errorPosts = action.error.message || "Failed to load Meta posts";
+        state.errorPosts = action.error.message || "Failed to load Facebook posts";
       });
   },
 });
 
 // Export actions
 export const {
-  initializeProgressiveStats,
+  initializeProgressiveFacebookStats,
   updatePageInfo,
+  updateFacebookUserInfo,
   startMetricFetch,
+  startFacebookMetricFetch,
   updateMetric,
+  updateFacebookMetric,
   failMetric,
+  failFacebookMetric,
   updateRecentPost,
-  completeProgressiveFetch
-} = metaSlice.actions;
+  completeProgressiveFetch,
+  completeProgressiveFacebookFetch,
+  resetProgressiveFacebookStats
+} = facebookSlice.actions;
 
 // Selectors
-export const selectMetaStats = (state: RootState) => state.meta.stats;
-export const selectMetaPosts = (state: RootState) => state.meta.posts;
+export const selectFacebookStats = (state: RootState) => state.facebook.stats;
+export const selectFacebookPosts = (state: RootState) => state.facebook.posts;
 
 // New progressive selectors
-export const selectProgressiveMetaStats = (state: RootState) => state.meta.progressiveStats;
-export const selectProgressiveMetaStatus = (state: RootState) => state.meta.statusProgressiveStats;
-export const selectProgressiveMetaError = (state: RootState) => state.meta.errorProgressiveStats;
+export const selectProgressiveFacebookStats = (state: RootState) => state.facebook.progressiveStats;
+export const selectProgressiveFacebookStatus = (state: RootState) => state.facebook.statusProgressiveStats;
+export const selectProgressiveFacebookError = (state: RootState) => state.facebook.errorProgressiveStats;
 
-export const selectMetaStatusStats = (state: RootState) =>
-  state.meta.statusStats;
-export const selectMetaStatusPosts = (state: RootState) =>
-  state.meta.statusPosts;
+export const selectFacebookStatusStats = (state: RootState) =>
+  state.facebook.statusStats;
+export const selectFacebookStatusPosts = (state: RootState) =>
+  state.facebook.statusPosts;
 
-export const selectMetaErrorStats = (state: RootState) => state.meta.errorStats;
-export const selectMetaErrorPosts = (state: RootState) => state.meta.errorPosts;
+export const selectFacebookErrorStats = (state: RootState) => state.facebook.errorStats;
+export const selectFacebookErrorPosts = (state: RootState) => state.facebook.errorPosts;
 
-export default metaSlice.reducer;
+export default facebookSlice.reducer;

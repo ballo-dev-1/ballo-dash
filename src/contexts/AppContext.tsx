@@ -6,10 +6,11 @@ import { companyService } from "@/services/companyService";
 import { userService } from "@/services/userService";
 import { integrationsService } from "@/services/integrationsService";
 import { linkedinService } from "@/services/linkedinService";
-import { metaService } from "@/services/metaService";
+import { facebookService } from "@/services/facebookService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
-import { fetchMetaStats } from "@/toolkit/metaData/reducer";
+import { fetchFacebookStats } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
+import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
 import { AppDispatch } from "@/toolkit";
@@ -34,8 +35,6 @@ export const useAppContext = () => {
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  console.log("🚀 AppProvider: Component is starting to render");
-  
   const [company, setCompanyLocal] = useState<Company | null>(null);
   const [user, setUserLocal] = useState<User | null>(null);
   const dispatch = useDispatch<AppDispatch>();
@@ -56,34 +55,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           userService.getUser(),
         ]);
 
-        console.log('AppContext: Services returned:', { companyData: !!companyData, userData: !!userData });
-
         // Only set company if we got valid data
         if (companyData) {
           setCompanyLocal(companyData);
           // Also update Redux store
           dispatch(setCompany(companyData));
-          console.log('✅ AppContext: Company data loaded, triggering social media data fetch...');
           
           // 🆕 Fetch LinkedIn and Facebook data if integrations exist
           try {
-            console.log('AppContext: Fetching integrations...');
             const integrations = await integrationsService.getIntegrations();
-            console.log('AppContext: Integrations fetched:', integrations?.length || 0);
             
 
-            
-            // Add detailed logging for integrations
-            console.log('AppContext: All integrations details:', integrations?.map((integration: any) => ({
-              type: integration.type,
-              status: integration.status,
-              hasAccessToken: !!integration.accessToken
-            })));
             
             // Auto-fetch data for all CONNECTED integrations
             const autoFetchDataForIntegration = async (integration: any) => {
               try {
-                console.log(`AppContext: Auto-fetching data for ${integration.type} integration...`);
+                
+                console.log(`🔍 Processing integration: ${integration.type} (status: ${integration.status})`);
                 
                 if (integration.type === 'LINKEDIN') {
                   // For now, we'll use a default organization ID since we don't have social profiles set up yet
@@ -91,54 +79,69 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   const defaultLinkedInOrgId = '90362182'; // This should come from your database
                   
                   try {
-                    await dispatch(fetchLinkedInStats({
-                      organizationId: defaultLinkedInOrgId,
-                      platform: 'linkedin',
-                      since: '',
-                      until: '',
-                      datePreset: 'last_30_days'
-                    })).unwrap();
-                    
-                    console.log('✅ AppContext: LinkedIn data auto-fetched successfully');
-                    toast.success('✅ LinkedIn data loaded successfully');
-                  } catch (error: any) {
-                    console.warn(`⚠️ AppContext: LinkedIn API call failed:`, error);
-                    
-                    // Provide more specific error messages based on the error
-                    if (error.message?.includes('access token not found')) {
-                      toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
-                    } else if (error.message?.includes('Unauthorized')) {
-                      toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
-                    } else {
-                      toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
-                    }
+                                      await dispatch(fetchLinkedInStats({
+                    organizationId: defaultLinkedInOrgId,
+                    platform: 'linkedin',
+                    since: '',
+                    until: '',
+                    datePreset: 'last_30_days'
+                  })).unwrap();
+                  
+                  toast.success('LinkedIn data loaded successfully');
+                } catch (error: any) {
+                  // Provide more specific error messages based on the error
+                  if (error.message?.includes('access token not found')) {
+                    toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
+                  } else if (error.message?.includes('Unauthorized')) {
+                    toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
+                  } else {
+                    toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
                   }
-                } else if (integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM') {
+                }
+                } else if (integration.type === 'FACEBOOK') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
                   const defaultPageId = 'me'; // This should come from your database
                   
                   try {
-                    await dispatch(fetchMetaStats({
+                    await dispatch(fetchFacebookStats({
                       pageId: defaultPageId,
-                      platform: integration.type.toLowerCase(),
+                      platform: 'facebook',
                       since: '',
                       until: '',
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
-                    toast.success(`✅ ${integration.type} data loaded successfully`);
+                    toast.success('Facebook data loaded successfully');
                   } catch (error: any) {
-                    console.warn(`⚠️ AppContext: ${integration.type} API call failed:`, error);
-                    
-                    // Provide more specific error messages based on the error
+                    console.error(`❌ Facebook error:`, error);
                     if (error.message?.includes('access token not found')) {
-                      toast.error(`${integration.type} integration not set up. Please configure your ${integration.type} integration first.`);
+                      toast.error(`Facebook integration not set up. Please configure your Facebook integration first.`);
                     } else if (error.message?.includes('Unauthorized')) {
-                      toast.error(`${integration.type} integration token expired. Please refresh your ${integration.type} integration.`);
+                      toast.error(`Facebook integration token expired. Please refresh your Facebook integration.`);
                     } else {
-                      toast.error(`Failed to load ${integration.type} data: ${error.message || 'Unknown error'}`);
+                      toast.error(`Failed to load Facebook data: ${error.message || 'Unknown error'}`);
+                    }
+                  }
+                } else if (integration.type === 'INSTAGRAM') {
+                  console.log(`📸 Processing Instagram integration for: ${integration.type}`);
+                  try {
+                    await dispatch(fetchInstagramStats({
+                      platform: 'instagram',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    toast.success('Instagram data loaded successfully');
+                  } catch (error: any) {
+                    console.error(`❌ Instagram error:`, error);
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`Instagram integration not set up. Please configure your Instagram integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`Instagram integration token expired. Please refresh your Instagram integration.`);
+                    } else {
+                      toast.error(`Failed to load Instagram data: ${error.message || 'Unknown error'}`);
                     }
                   }
                 } else if (integration.type === 'X') {
@@ -155,10 +158,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    console.log(`✅ AppContext: ${integration.type} data auto-fetched successfully`);
-                    toast.success(`✅ ${integration.type} data loaded successfully`);
+                    toast.success(`${integration.type} data loaded successfully`);
                   } catch (error: any) {
-                    console.warn(`⚠️ AppContext: X API call failed for ${username}:`, error);
                     
                     // Provide more specific error messages based on the error
                     if (error.message?.includes('access token not found')) {
@@ -185,41 +186,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               (integration.type === 'LINKEDIN' || integration.type === 'FACEBOOK' || integration.type === 'INSTAGRAM' || integration.type === 'X')
             );
 
-            console.log('AppContext: Found CONNECTED integrations:', connectedIntegrations.map(i => ({
-              type: i.type,
-              status: i.status,
-              hasAccessToken: !!i.accessToken
-            })));
+            console.log(`🔍 Found ${connectedIntegrations.length} connected integrations:`, connectedIntegrations.map(i => ({ type: i.type, status: i.status })));
 
             // Auto-fetch data for all CONNECTED integrations in parallel
             if (connectedIntegrations.length > 0) {
-              console.log('🚀 AppContext: Starting auto-fetch for all CONNECTED integrations...');
-              
               // Use Promise.allSettled to handle multiple integrations without failing if one fails
               const autoFetchPromises = connectedIntegrations.map(autoFetchDataForIntegration);
-              const results = await Promise.allSettled(autoFetchPromises);
-              
-              // Log results
-              results.forEach((result, index) => {
-                const integration = connectedIntegrations[index];
-                if (result.status === 'fulfilled') {
-                  console.log(`✅ AppContext: Auto-fetch completed for ${integration.type}`);
-                } else {
-                  console.warn(`⚠️ AppContext: Auto-fetch failed for ${integration.type}:`, result.reason);
-                }
-              });
-              
-              console.log('🎯 AppContext: Auto-fetch for all CONNECTED integrations completed');
-            } else {
-              console.log('ℹ️ AppContext: No CONNECTED integrations found for auto-fetch');
+              await Promise.allSettled(autoFetchPromises);
             }
             
           } catch (error) {
-            console.warn('⚠️ AppContext: Error fetching integrations:', error);
+            // Error fetching integrations
           }
           
         } else {
-          console.warn('⚠️ Company data is null, this might indicate an API issue');
+          // Company data is null, this might indicate an API issue
         }
         
         // Only set user if we got valid data
@@ -227,21 +208,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setUserLocal(userData);
           // Also update Redux store
           dispatch(setSelectedUser(userData));
-          console.log('✅ AppContext: User data loaded');
         } else {
-          console.warn('⚠️ User data is null, this might indicate an API issue');
+          // User data is null, this might indicate an API issue
         }
         
-        console.log('🎉 AppContext: Initial data fetch completed');
       } catch (error) {
-        console.error('❌ AppContext: Error fetching initial data:', error);
+        // Error fetching initial data
       }
     };
 
     fetchData();
   }, [dispatch]);
 
-  console.log('AppContext: About to render children, company:', !!company, 'user:', !!user);
+
 
   return (
     <AppContext.Provider value={{ company, user, setCompany: setCompanyLocal, setUser: setUserLocal }}>

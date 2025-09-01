@@ -4,10 +4,10 @@ import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { 
-  selectProgressiveMetaStats, 
-  selectProgressiveMetaStatus,
-  selectProgressiveMetaError 
-} from "@/toolkit/metaData/reducer";
+  selectProgressiveFacebookStats, 
+  selectProgressiveFacebookStatus,
+  selectProgressiveFacebookError 
+} from "@/toolkit/facebookData/reducer";
 import { 
   selectProgressiveLinkedInStats, 
   selectProgressiveLinkedInStatus,
@@ -29,7 +29,7 @@ interface PlatformOverview {
   pageLikesValue?: number | string;
 }
 
-const transformMetaData = (meta: any): PlatformOverview | null => {
+const transformFacebookData = (meta: any): PlatformOverview | null => {
   if (!meta) return null;
 
   const { platform = "Facebook", pageInfo, metrics = {} } = meta;
@@ -76,7 +76,7 @@ const transformMetaData = (meta: any): PlatformOverview | null => {
 };
 
 // New function to transform progressive Facebook data
-const transformProgressiveMetaData = (progressiveData: any): PlatformOverview | null => {
+const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
   if (!progressiveData) return null;
 
   const { pageInfo, metrics, loadingMetrics } = progressiveData;
@@ -174,9 +174,9 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   onToggleExpand,
 }) => {
   // Get progressive data from Redux
-  const progressiveMetaData = useSelector(selectProgressiveMetaStats);
-  const progressiveMetaStatus = useSelector(selectProgressiveMetaStatus);
-  const progressiveMetaError = useSelector(selectProgressiveMetaError);
+  const progressiveFacebookData = useSelector(selectProgressiveFacebookStats);
+  const progressiveFacebookStatus = useSelector(selectProgressiveFacebookStatus);
+  const progressiveFacebookError = useSelector(selectProgressiveFacebookError);
   
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
   const progressiveLinkedInStatus = useSelector(selectProgressiveLinkedInStatus);
@@ -190,9 +190,9 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   const linkedinDataArray: PlatformOverview[] = [];
 
   // Use progressive Facebook data if available, otherwise fall back to regular meta data
-  const transformedFacebook = progressiveMetaData 
-    ? transformProgressiveMetaData(progressiveMetaData)
-    : transformMetaData(meta);
+  const transformedFacebook = progressiveFacebookData 
+    ? transformProgressiveFacebookData(progressiveFacebookData)
+    : transformFacebookData(meta);
     
   if (transformedFacebook) {
     facebookData.push(transformedFacebook);
@@ -264,8 +264,8 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
   ];
 
   // Determine loading state
-  const isLoading = progressiveMetaStatus === "loading" || progressiveLinkedInStatus === "loading" || 
-                   (!progressiveMetaData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
+  const isLoading = progressiveFacebookStatus === "loading" || progressiveLinkedInStatus === "loading" || 
+                   (!progressiveFacebookData && !meta?.metrics && !progressiveLinkedInData && !linkedInData);
 
   return (
     <Row>

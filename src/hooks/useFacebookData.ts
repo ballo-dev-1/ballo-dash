@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { metaService } from '@/services/metaService';
+import { facebookService } from '@/services/facebookService';
 
-interface UseMetaDataReturn {
+interface UseFacebookDataReturn {
   pageInfo: any | null;
   posts: any[] | null;
   metrics: Record<string, any>;
@@ -12,7 +12,7 @@ interface UseMetaDataReturn {
   getMetrics: (metrics: string[]) => Promise<void>;
 }
 
-export const useMetaData = (pageId: string, platform: string = 'facebook'): UseMetaDataReturn => {
+export const useFacebookData = (pageId: string, platform: string = 'facebook'): UseFacebookDataReturn => {
   const [pageInfo, setPageInfo] = useState<any | null>(null);
   const [posts, setPosts] = useState<any[] | null>(null);
   const [metrics, setMetrics] = useState<Record<string, any>>({});
@@ -23,7 +23,7 @@ export const useMetaData = (pageId: string, platform: string = 'facebook'): UseM
   const fetchPageInfo = async () => {
     try {
       setError(null);
-      const info = await metaService.getPageInfo(pageId, platform);
+      const info = await facebookService.getPageInfo(pageId, platform);
       setPageInfo(info);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch page info');
@@ -33,7 +33,7 @@ export const useMetaData = (pageId: string, platform: string = 'facebook'): UseM
   const fetchPosts = async () => {
     try {
       setError(null);
-      const postsData = await metaService.getPosts(pageId, platform);
+      const postsData = await facebookService.getPosts(pageId, platform);
       setPosts(postsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch posts');
@@ -43,7 +43,7 @@ export const useMetaData = (pageId: string, platform: string = 'facebook'): UseM
   const fetchStats = async () => {
     try {
       setError(null);
-      const statsData = await metaService.getStats(pageId, platform);
+      const statsData = await facebookService.getStats(pageId, platform);
       setStats(statsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch stats');
@@ -53,7 +53,7 @@ export const useMetaData = (pageId: string, platform: string = 'facebook'): UseM
   const getMetrics = async (metricsList: string[]) => {
     try {
       setError(null);
-      const metricsData = await metaService.getMultipleMetrics(pageId, metricsList, platform);
+      const metricsData = await facebookService.getMultipleMetrics(pageId, metricsList, platform);
       setMetrics(prev => ({ ...prev, ...metricsData }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch metrics');

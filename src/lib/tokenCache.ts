@@ -34,17 +34,14 @@ class TokenCacheService {
     const cached = this.cache.get(cacheKey);
 
     if (!cached) {
-      console.log(`TokenCache: No cached token for ${integrationType} (${companyId})`);
       return null;
     }
 
     if (Date.now() > cached.expiresAt) {
-      console.log(`TokenCache: Cached token for ${integrationType} (${companyId}) has expired`);
       this.cache.delete(cacheKey);
       return null;
     }
 
-    console.log(`✅ TokenCache: Using cached token for ${integrationType} (${companyId})`);
     return cached.token;
   }
 
@@ -61,8 +58,6 @@ class TokenCacheService {
       companyId,
       integrationType
     });
-
-    console.log(`💾 TokenCache: Stored ${integrationType} token for company ${companyId} (expires in 5 minutes)`);
   }
 
   /**
@@ -71,7 +66,6 @@ class TokenCacheService {
   public clearToken(companyId: string, integrationType: string): void {
     const cacheKey = this.getCacheKey(companyId, integrationType);
     this.cache.delete(cacheKey);
-    console.log(`🗑️ TokenCache: Cleared ${integrationType} token for company ${companyId}`);
   }
 
   /**
@@ -80,14 +74,13 @@ class TokenCacheService {
   public clearCompanyTokens(companyId: string): void {
     const keysToDelete: string[] = [];
     
-    for (const [key, value] of this.cache.entries()) {
+    this.cache.forEach((value, key) => {
       if (value.companyId === companyId) {
         keysToDelete.push(key);
       }
-    }
+    });
 
     keysToDelete.forEach(key => this.cache.delete(key));
-    console.log(`🗑️ TokenCache: Cleared all tokens for company ${companyId}`);
   }
 
   /**
@@ -97,17 +90,13 @@ class TokenCacheService {
     const now = Date.now();
     const keysToDelete: string[] = [];
 
-    for (const [key, value] of this.cache.entries()) {
+    this.cache.forEach((value, key) => {
       if (now > value.expiresAt) {
         keysToDelete.push(key);
       }
-    }
+    });
 
     keysToDelete.forEach(key => this.cache.delete(key));
-    
-    if (keysToDelete.length > 0) {
-      console.log(`🧹 TokenCache: Cleaned up ${keysToDelete.length} expired tokens`);
-    }
   }
 
   /**
@@ -118,13 +107,13 @@ class TokenCacheService {
     let expired = 0;
     let valid = 0;
 
-    for (const value of this.cache.values()) {
+    this.cache.forEach((value) => {
       if (now > value.expiresAt) {
         expired++;
       } else {
         valid++;
       }
-    }
+    });
 
     return {
       total: this.cache.size,
@@ -138,7 +127,6 @@ class TokenCacheService {
    */
   public clearAll(): void {
     this.cache.clear();
-    console.log(`🗑️ TokenCache: Cleared entire cache`);
   }
 }
 
