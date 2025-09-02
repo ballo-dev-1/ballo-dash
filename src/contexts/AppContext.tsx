@@ -8,7 +8,7 @@ import { integrationsService } from "@/services/integrationsService";
 import { linkedinService } from "@/services/linkedinService";
 import { facebookService } from "@/services/facebookService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
-import { fetchFacebookStats } from "@/toolkit/facebookData/reducer";
+import { fetchFacebookStats, fetchFacebookPosts } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
 import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
@@ -104,6 +104,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   const defaultPageId = 'me'; // This should come from your database
                   
                   try {
+                    // Fetch Facebook stats
                     await dispatch(fetchFacebookStats({
                       pageId: defaultPageId,
                       platform: 'facebook',
@@ -112,7 +113,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    toast.success('Facebook data loaded successfully');
+                    // Fetch Facebook posts
+                    await dispatch(fetchFacebookPosts({
+                      pageId: defaultPageId,
+                      platform: 'facebook',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    toast.success('Facebook data and posts loaded successfully');
                   } catch (error: any) {
                     console.error(`❌ Facebook error:`, error);
                     if (error.message?.includes('access token not found')) {

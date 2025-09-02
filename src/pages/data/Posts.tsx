@@ -11,7 +11,7 @@ import React, { ReactElement, useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import PostsTable from "./tables/PostsTable";
 import TopPosts from "./tables/TopPosts";
-import { fetchFacebookPosts, selectFacebookPosts } from "@/toolkit/facebookData/reducer";
+import { fetchFacebookPosts, selectFacebookPosts, selectFacebookStatusPosts } from "@/toolkit/facebookData/reducer";
 import { useAppDispatch } from "@/toolkit/hooks";
 import { useSelector } from "react-redux";
 
@@ -20,7 +20,9 @@ interface Props {
 }
 
 const Posts: React.FC<Props> = ({ data }) => {
+  const dispatch = useAppDispatch();
   const facebookPosts = useSelector(selectFacebookPosts);
+  const facebookPostsStatus = useSelector(selectFacebookStatusPosts);
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
     {}
@@ -33,11 +35,35 @@ const Posts: React.FC<Props> = ({ data }) => {
     }));
   };
 
+  const handleRefreshFacebookPosts = async () => {
+    try {
+      await dispatch(fetchFacebookPosts({
+        pageId: 'me',
+        platform: 'facebook',
+        since: '',
+        until: '',
+        datePreset: 'last_30_days'
+      })).unwrap();
+      console.log('✅ Facebook posts refreshed successfully');
+    } catch (error) {
+      console.error('❌ Failed to refresh Facebook posts:', error);
+    }
+  };
+
   const tableKey1 = 1;
   const tableKey2 = 2;
   return (
     <div>
-      <h3 className="my-4 mx-2 text-center">Posts</h3>
+      <div className="d-flex justify-content-between align-items-center my-4 mx-2">
+        <h3 className="text-center flex-grow-1">Posts</h3>
+        <button 
+          className="btn btn-primary btn-sm"
+          onClick={handleRefreshFacebookPosts}
+          disabled={facebookPostsStatus === 'loading'}
+        >
+          {facebookPostsStatus === 'loading' ? 'Loading...' : 'Refresh Posts'}
+        </button>
+      </div>
       <Row>
         <Col md={expandedCols[tableKey1] ? 12 : 6}>
           <PostsTable

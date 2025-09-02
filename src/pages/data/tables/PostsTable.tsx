@@ -33,6 +33,16 @@ type TransformedPost = {
   message: string;
   truncatedMessage: string;
   post_reach: number | string;
+  engagement: number | string;
+  comments: number | string;
+  reactions: string;
+  shares: number | string;
+  likes: number | string;
+  loves: number | string;
+  wows: number | string;
+  hahas: number | string;
+  sorries: number | string;
+  angers: number | string;
 };
 
 function transformData(data: RawPost[]): TransformedPost[] {
@@ -96,6 +106,12 @@ function transformData(data: RawPost[]): TransformedPost[] {
         comments,
         reactions,
         shares,
+        likes: likes || 0,
+        loves: loves || 0,
+        wows: wows || 0,
+        hahas: hahas || 0,
+        sorries: sorries || 0,
+        angers: angers || 0,
       };
     });
 }
@@ -106,13 +122,18 @@ const PostsTable: React.FC<Props> = ({
   platform,
   data,
 }) => {
-  // console.log(data);
+  console.log("📊 PostsTable - Platform:", platform);
+  console.log("📊 PostsTable - Data:", data);
 
   const transformedData = Array.isArray(data?.posts)
     ? transformData(data?.posts)
     : [];
 
   const postData = transformedData;
+  
+  // Check if we have valid data
+  const hasData = postData.length > 0;
+  const isLoading = !data || (data && !data.posts);
 
   const title =
     typeof platform === "string" ? platform.toLocaleLowerCase() : "facebook";
@@ -210,15 +231,24 @@ const PostsTable: React.FC<Props> = ({
             </Card.Header>
             <Card.Body className="table-border-style">
               <div className="overflow-hidden post-table">
-                <TableContainer
-                  columns={columns || []}
-                  data={postData || []}
-                  isGlobalFilter={true}
-                  isBordered={false}
-                  customPageSize={5}
-                  isPagination={true}
-                  loading={postData.length < 1}
-                />
+                {!hasData && !isLoading ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No posts found for this {platform} page.</p>
+                    <small className="text-muted">
+                      Make sure your {platform} integration is connected and has posts.
+                    </small>
+                  </div>
+                ) : (
+                  <TableContainer
+                    columns={columns || []}
+                    data={postData || []}
+                    isGlobalFilter={true}
+                    isBordered={false}
+                    customPageSize={5}
+                    isPagination={true}
+                    loading={isLoading}
+                  />
+                )}
               </div>
             </Card.Body>
           </Card>

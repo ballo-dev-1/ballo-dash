@@ -28,19 +28,12 @@ export default async function handler(
     if (!companyId) {
       return res.status(400).json({ error: "Company ID not found in session" });
     }
-
-    // Fetch Facebook access token directly from database
-    console.log("Fetching Facebook access token from database for posts...");
-    console.log("   User Email:", session.user.email);
-    console.log("   Company ID:", companyId);
     
     const accessToken = await getFacebookAccessToken(companyId);
     
     if (!accessToken) {
       return res.status(400).json({ error: "Facebook access token not found in database" });
     }
-
-    console.log("✅ Retrieved Facebook access token from database for posts, company:", companyId);
 
     // 1. Fetch Page Info
     const pageInfoRes = await fetch(
@@ -64,7 +57,7 @@ export default async function handler(
 
     // 3. Fetch Posts
     const postsRes = await fetch(
-      `https://graph.${platform}.com/v23.0/${pageId}/posts?limit=100&access_token=${accessToken}`,
+      `https://graph.facebook.com/v23.0/${pageId}/posts?limit=100&access_token=${accessToken}`,
       {
         headers: {
           'User-Agent': 'Ballo-Dashboard/1.0'
