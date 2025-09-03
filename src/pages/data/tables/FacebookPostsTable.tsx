@@ -1,26 +1,18 @@
-import { apimethod } from "@/Common/JsonData";
 import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React from "react";
-import { Card, Col, Row, Table } from "react-bootstrap";
+import { Card, Col, Row } from "react-bootstrap";
 import facebookIcon from "@/assets/images/socials/facebook.png";
-import instaIcon from "@/assets/images/socials/instagram.png";
-import tiktokIcon from "@/assets/images/socials/tiktok.png";
-import linkedinIcon from "@/assets/images/socials/linkedin.png";
-import tableIcon from "@/assets/images/socials/table.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
-import { Engagement } from "next/font/google";
 
 interface Props {
-  // meta: any; // Replace `any` with a proper type if you know the shape of `meta`
   isExpanded: boolean;
   onToggleExpand: () => void;
-  platform: "facebook" | "linkedin" | "instagram" | "tiktok";
   data: any;
 }
 
-type RawPost = {
+type FacebookRawPost = {
   created_time: string;
   message?: string;
   story?: string;
@@ -28,18 +20,27 @@ type RawPost = {
   insights?: any;
 };
 
-type TransformedPost = {
+type FacebookTransformedPost = {
   created_time: string; // format: dd/mm/yyyy hh:mm
   message: string;
   truncatedMessage: string;
   post_reach: number | string;
+  engagement: number | string;
+  comments: number | string;
+  reactions: string;
+  shares: number | string;
+  likes: number | string;
+  loves: number | string;
+  wows: number | string;
+  hahas: number | string;
+  sorries: number | string;
+  angers: number | string;
 };
 
-function transformData(data: RawPost[]): TransformedPost[] {
-  let reactions = "";
+function transformFacebookData(data: FacebookRawPost[]): FacebookTransformedPost[] {
   return data
     .filter(
-      (post): post is RawPost & { message: string; created_time: string } =>
+      (post): post is FacebookRawPost & { message: string; created_time: string } =>
         !!post.message && !!post.created_time
     )
     .map((post) => {
@@ -53,25 +54,16 @@ function transformData(data: RawPost[]): TransformedPost[] {
       const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
       const post_reach = post?.insights?.post_impressions ?? "-";
-
       const comments = post?.insights?.comment || 0;
-
       const shares = post?.insights?.share || 0;
+      const likes = post?.insights?.post_reactions_like_total || 0;
+      const loves = post?.insights?.post_reactions_love_total || 0;
+      const wows = post?.insights?.post_reactions_wow_total || 0;
+      const hahas = post?.insights?.post_reactions_haha_total || 0;
+      const sorries = post?.insights?.post_reactions_sorry_total || 0;
+      const angers = post?.insights?.post_reactions_anger_total || 0;
 
-      const likes = post?.insights?.post_reactions_like_total;
-
-      const loves = post?.insights?.post_reactions_love_total;
-
-      const wows = post?.insights?.post_reactions_wow_total;
-
-      const hahas = post?.insights?.post_reactions_haha_total;
-
-      const sorries = post?.insights?.post_reactions_sorry_total;
-
-      const angers = post?.insights?.post_reactions_anger_total;
-
-      let engagement =
-        likes + comments + shares + loves + wows + hahas + sorries + angers;
+      const engagement = likes + comments + shares + loves + wows + hahas + sorries + angers;
 
       const reactions = [
         likes ? `👍${likes}` : null,
@@ -96,6 +88,12 @@ function transformData(data: RawPost[]): TransformedPost[] {
         comments,
         reactions,
         shares,
+        likes,
+        loves,
+        wows,
+        hahas,
+        sorries,
+        angers,
       };
     });
 }
@@ -103,19 +101,19 @@ function transformData(data: RawPost[]): TransformedPost[] {
 const FacebookPostsTable: React.FC<Props> = ({
   isExpanded,
   onToggleExpand,
-  platform,
   data,
 }) => {
-  console.log(data);
+  console.log("📘 FacebookPostsTable - Data:", data);
 
   const transformedData = Array.isArray(data?.posts)
-    ? transformData(data?.posts)
+    ? transformFacebookData(data?.posts)
     : [];
 
   const postData = transformedData;
-
-  const title =
-    typeof platform === "string" ? platform.toLocaleLowerCase() : "facebook";
+  
+  // Check if we have valid data
+  const hasData = postData.length > 0;
+  const isLoading = !data || (data && !data.posts);
 
   const columns = [
     { header: "Date", enableColumnFilter: false, accessorKey: "created_time" },
@@ -178,7 +176,7 @@ const FacebookPostsTable: React.FC<Props> = ({
                       {data?.pageInfo?.profilePicture && (
                         <img
                           src={data?.pageInfo?.profilePicture}
-                          alt={`${title} icon`}
+                          alt="Facebook page icon"
                           className="rounded-circle"
                           style={{
                             objectFit: "contain",
@@ -194,31 +192,34 @@ const FacebookPostsTable: React.FC<Props> = ({
 
                 <div className="d-flex justify-content-center align-items-center">
                   <Image
-                    src={
-                      title === "facebook"
-                        ? facebookIcon
-                        : title === "linkedin"
-                        ? linkedinIcon
-                        : tableIcon
-                    }
-                    alt={`${title} icon`}
+                    src={facebookIcon}
+                    alt="Facebook icon"
                     style={{ objectFit: "contain", width: 20, marginRight: 8 }}
                   />
-                  {title}
+                  Facebook
                 </div>
               </div>
             </Card.Header>
             <Card.Body className="table-border-style">
               <div className="overflow-hidden post-table">
-                <TableContainer
-                  columns={columns || []}
-                  data={postData || []}
-                  isGlobalFilter={true}
-                  isBordered={false}
-                  customPageSize={5}
-                  isPagination={true}
-                  loading={postData.length < 1}
-                />
+                {!hasData && !isLoading ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No posts found for this Facebook page.</p>
+                    <small className="text-muted">
+                      Make sure your Facebook integration is connected and has posts.
+                    </small>
+                  </div>
+                ) : (
+                  <TableContainer
+                    columns={columns || []}
+                    data={postData || []}
+                    isGlobalFilter={true}
+                    isBordered={false}
+                    customPageSize={5}
+                    isPagination={true}
+                    loading={isLoading}
+                  />
+                )}
               </div>
             </Card.Body>
           </Card>

@@ -118,6 +118,7 @@ export interface InstagramData {
     views: number;
     contentViews: number;
   };
+  recentPost?: any;
   since?: string;
   until?: string;
   datePreset?: string;
@@ -521,6 +522,16 @@ class DataTransformationService {
     // Use profile follower count if available, otherwise fallback to insights follower count
     const followers = profileFollowers || metrics.followers || 0;
 
+    // Helper function to format recent post date
+    const getRecentPostDate = () => {
+      if (!instagramData.recentPost?.data?.[0]?.timestamp) return "-";
+      
+      const rawDate = instagramData.recentPost.data[0].timestamp;
+      const parsedDate = new Date(rawDate);
+      
+      return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
+    };
+
     return {
       platform: "Instagram",
       pageName: pageName || "Instagram Account",
@@ -536,7 +547,7 @@ class DataTransformationService {
       "CTA Clicks (week)": metrics.websiteClicks || "-",
       "CTA Clicks (month)": metrics.websiteClicks || "-",
       engagement: metrics.totalInteractions || "-",
-      last_post_date: "-", // Instagram posts are fetched separately
+      last_post_date: getRecentPostDate(),
     };
   }
 

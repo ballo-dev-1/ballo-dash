@@ -10,7 +10,7 @@ import { facebookService } from "@/services/facebookService";
 import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
 import { fetchFacebookStats, fetchFacebookPosts } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
-import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
+import { fetchInstagramStats, fetchInstagramPosts } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
 import { AppDispatch } from "@/toolkit";
@@ -134,16 +134,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     }
                   }
                 } else if (integration.type === 'INSTAGRAM') {
-                  console.log(`📸 Processing Instagram integration for: ${integration.type}`);
+                  console.log(`📸 Processing Instagram integration for: ${integration.type}, accountId: ${integration.accountId}`);
                   try {
-                    await dispatch(fetchInstagramStats({
+                    // First fetch Instagram stats to get the username
+                    const statsResult = await dispatch(fetchInstagramStats({
                       platform: 'instagram',
                       since: '',
                       until: '',
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    toast.success('Instagram data loaded successfully');
+                    // Then fetch Instagram posts using the accountId from integration and username from stats
+                    await dispatch(fetchInstagramPosts({
+                      accountId: integration.accountId || 'me', // Use accountId from integration table
+                      username: statsResult.userInfo?.username // Use username from stats
+                    })).unwrap();
+                    
+                    toast.success('Instagram data and posts loaded successfully');
                   } catch (error: any) {
                     console.error(`❌ Instagram error:`, error);
                     if (error.message?.includes('access token not found')) {

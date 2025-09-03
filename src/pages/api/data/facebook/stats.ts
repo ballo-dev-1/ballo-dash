@@ -121,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       pageInfo,
       platform,
       metrics: structuredData,
-      recentPost: recentPost.data?.[0] || null,
+      recentPost: recentPost.data ? { data: recentPost.data } : null,
     };
 
     // Check if data has changed before caching
