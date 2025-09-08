@@ -53,7 +53,7 @@ const PostsTable: React.FC<Props> = ({
         <GenericPostsTable
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
-          platform={platform}
+          platform={platform || "tiktok"}
           data={data}
           columns={[]}
           postData={[]}

@@ -31,7 +31,7 @@ const GenericPostsTable: React.FC<Props> = ({
   hasData,
   isLoading,
 }) => {
-  const title = platform.toLowerCase();
+  const title = platform?.toLowerCase() || 'unknown';
 
   const getPlatformIcon = () => {
     switch (title) {
@@ -43,6 +43,8 @@ const GenericPostsTable: React.FC<Props> = ({
         return instaIcon;
       case "tiktok":
         return tiktokIcon;
+      case "unknown":
+        return tableIcon;
       default:
         return tableIcon;
     }
@@ -58,8 +60,10 @@ const GenericPostsTable: React.FC<Props> = ({
         return "Instagram";
       case "tiktok":
         return "TikTok";
+      case "unknown":
+        return "Unknown Platform";
       default:
-        return title;
+        return title || "Unknown Platform";
     }
   };
 
