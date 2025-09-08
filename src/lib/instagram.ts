@@ -10,16 +10,11 @@ import { tokenCache } from "./tokenCache";
  */
 export async function getInstagramAccessToken(companyId: string): Promise<string | null> {
   try {
-    console.log(`🔍 getInstagramAccessToken called with companyId: ${companyId}`);
-    
     // Check cache first
     const cachedToken = tokenCache.getCachedToken(companyId, 'INSTAGRAM');
     if (cachedToken) {
-      console.log(`✅ Found cached Instagram token, length: ${cachedToken.length}`);
       return cachedToken;
     }
-
-    console.log(`🔍 No cached token, querying database...`);
 
     // Query database for Instagram integration
     const instagramIntegration = await db
@@ -34,34 +29,19 @@ export async function getInstagramAccessToken(companyId: string): Promise<string
       )
       .limit(1);
 
-    console.log(`📊 Database query result:`, {
-      found: instagramIntegration.length > 0,
-      integration: instagramIntegration[0] ? {
-        id: instagramIntegration[0].id,
-        type: instagramIntegration[0].type,
-        status: instagramIntegration[0].status,
-        hasAccessToken: !!instagramIntegration[0].accessToken,
-        accessTokenLength: instagramIntegration[0].accessToken?.length
-      } : null
-    });
-
     if (instagramIntegration.length === 0) {
-      console.log(`❌ No Instagram integration found in database`);
       return null;
     }
 
     const token = instagramIntegration[0].accessToken;
     if (token) {
-      console.log(`✅ Found Instagram access token, length: ${token.length}`);
       // Cache the token
       tokenCache.cacheToken(companyId, 'INSTAGRAM', token);
       return token;
     }
 
-    console.log(`❌ Instagram integration found but no access token`);
     return null;
   } catch (error) {
-    console.error(`❌ Error in getInstagramAccessToken:`, error);
     return null;
   }
 }
@@ -94,38 +74,24 @@ export async function hasInstagramIntegration(companyId: string): Promise<boolea
  */
 export async function getInstagramAccountId(accessToken: string): Promise<string | null> {
   try {
-    console.log(`🔍 getInstagramAccountId: Fetching account ID from Instagram API...`);
-    
     const response = await fetch(
       `https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`
     );
 
-    console.log(`🔍 getInstagramAccountId: API response status: ${response.status}`);
-
     if (!response.ok) {
-      console.log(`❌ getInstagramAccountId: API request failed with status: ${response.status}`);
       const errorText = await response.text();
-      console.log(`❌ getInstagramAccountId: Error response:`, errorText);
       return null;
     }
 
     const data = await response.json();
-    console.log(`🔍 getInstagramAccountId: API response data:`, data);
 
     const instagramAccount = data.data?.find((account: any) => 
       account.instagram_business_account?.id
     );
 
     if (instagramAccount?.instagram_business_account?.id) {
-      console.log(`✅ getInstagramAccountId: Found Instagram business account ID: ${instagramAccount.instagram_business_account.id}`);
       return instagramAccount.instagram_business_account.id;
-    } else {
-      console.log(`❌ getInstagramAccountId: No Instagram business account found in API response`);
-      console.log(`🔍 getInstagramAccountId: Available accounts:`, data.data?.map((acc: any) => ({
-        id: acc.id,
-        name: acc.name,
-        hasInstagram: !!acc.instagram_business_account
-      })));
+    } else {     
       return null;
     }
   } catch (error) {
@@ -138,20 +104,13 @@ export async function getInstagramAccountId(accessToken: string): Promise<string
  * Store Instagram account ID in the database
  */
 export async function storeInstagramAccountId(companyId: string, accountId: string): Promise<void> {
-  try {
-    console.log(`🔍 storeInstagramAccountId: Starting database update...`);
-    console.log(`🔍 storeInstagramAccountId: Company ID: ${companyId}`);
-    console.log(`🔍 storeInstagramAccountId: Account ID to store: ${accountId}`);
-    
+  try { 
     // First, let's check what integrations exist for this company
     const existingIntegrations = await db
       .select({ id: integrations.id, type: integrations.type, status: integrations.status })
       .from(integrations)
       .where(eq(integrations.companyId, companyId));
-    
-    console.log(`🔍 storeInstagramAccountId: Found ${existingIntegrations.length} total integrations for company`);
-    console.log(`🔍 storeInstagramAccountId: Integrations:`, existingIntegrations);
-    
+ 
     // Now update the Instagram integration
     const result = await db
       .update(integrations)
@@ -166,9 +125,6 @@ export async function storeInstagramAccountId(companyId: string, accountId: stri
           eq(integrations.status, 'CONNECTED')
         )
       );
-    
-    console.log(`🔍 storeInstagramAccountId: Database update result:`, result);
-    console.log(`✅ storeInstagramAccountId: Successfully stored Instagram account ID: ${accountId} for company: ${companyId}`);
     
     // Verify the update worked
     const verification = await db
@@ -230,6 +186,44 @@ export async function getStoredInstagramAccountId(companyId: string): Promise<st
     return integration[0]?.accountId || null;
   } catch (error) {
     console.error(`❌ getStoredInstagramAccountId: Error:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get Instagram username from account ID
+ */
+export async function getInstagramUsername(accountId: string, accessToken: string): Promise<string | null> {
+  try {
+    console.log(`🔍 getInstagramUsername: Fetching username for account ID: ${accountId}`);
+    
+    const response = await fetch(
+      `https://graph.facebook.com/v23.0/${accountId}?fields=username&access_token=${accessToken}`,
+      {
+        headers: {
+          'User-Agent': 'Ballo-Dashboard/1.0'
+        }
+      }
+    );
+    console.log(`🤖🤖🤖getInstagramUsername: Request: https://graph.facebook.com/v23.0/${accountId}?fields=username&access_token=${accessToken}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ getInstagramUsername: API error:`, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const username = data.username;
+
+    if (username) {
+      console.log(`✅ getInstagramUsername: Found username: ${username}`);
+      return username;
+    } else {
+      console.log(`❌ getInstagramUsername: No username found in response`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`❌ getInstagramUsername: Error:`, error);
     return null;
   }
 }

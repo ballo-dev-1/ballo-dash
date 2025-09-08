@@ -72,8 +72,8 @@ export default async function handler(
       return res.status(404).json({ error: "Instagram account not found" });
     }
 
-    // Fetch Instagram profile info (bio, username) and insights
-    const [profileResponse, reachResponse, engagementResponse] = await Promise.all([
+    // Fetch Instagram profile info (bio, username), insights, and recent posts
+    const [profileResponse, reachResponse, engagementResponse, recentPostResponse] = await Promise.all([
       fetch(
         `https://graph.facebook.com/v23.0/${accountId}?fields=biography,id,username,followers_count&access_token=${accessToken}`
       ),
@@ -82,6 +82,9 @@ export default async function handler(
       ),
       fetch(
         `https://graph.facebook.com/v19.0/${accountId}/insights?metric=website_clicks,profile_views,accounts_engaged,total_interactions,likes,comments,shares,saves,replies,follows_and_unfollows,profile_links_taps,views,content_views&metric_type=total_value&period=day&access_token=${accessToken}`
+      ),
+      fetch(
+        `https://graph.facebook.com/v23.0/${accountId}/media?limit=1&fields=id,caption,timestamp&access_token=${accessToken}`
       )
     ]);
 
@@ -89,10 +92,11 @@ export default async function handler(
       throw new Error(`Instagram API error: Profile: ${profileResponse.status}, Reach: ${reachResponse.status}, Engagement: ${engagementResponse.status}`);
     }
 
-    const [profileData, reachData, engagementData] = await Promise.all([
+    const [profileData, reachData, engagementData, recentPostData] = await Promise.all([
       profileResponse.json(),
       reachResponse.json(),
-      engagementResponse.json()
+      engagementResponse.json(),
+      recentPostResponse.json()
     ]);
 
     console.log("📸 Instagram Profile Data:", {
@@ -129,6 +133,7 @@ export default async function handler(
         views: engagementData.data?.find((m: any) => m.name === "views")?.values?.[0]?.value || 0,
         contentViews: engagementData.data?.find((m: any) => m.name === "content_views")?.values?.[0]?.value || 0
       },
+      recentPost: recentPostData.data ? { data: recentPostData.data } : null,
       since: '', // Instagram API doesn't support custom date ranges for these metrics
       until: '',
       datePreset: 'last_30_days'

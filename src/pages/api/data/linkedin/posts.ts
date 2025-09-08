@@ -1,17 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { getLinkedInAccessToken } from "@/lib/linkedin";
+import { getLinkedInAccessToken, getStoredLinkedInOrganizationId } from "@/lib/linkedin";
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   const { organizationId } = req.query;
-
-  if (typeof organizationId !== "string") {
-    return res.status(400).json({ error: "Missing organizationId" });
-  }
 
   try {
     // Get user session to find company ID
@@ -25,11 +21,6 @@ export default async function handler(
     if (!companyId) {
       return res.status(400).json({ error: "Company ID not found in session" });
     }
-
-    // Fetch LinkedIn access token directly from database
-    console.log("Fetching LinkedIn access token from database for posts...");
-    console.log("   User Email:", session.user.email);
-    console.log("   Company ID:", companyId);
     
     const accessToken = await getLinkedInAccessToken(companyId);
     
@@ -39,46 +30,76 @@ export default async function handler(
 
     console.log("✅ Retrieved LinkedIn access token from database for posts, company:", companyId);
 
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      "X-Restli-Protocol-Version": "2.0.0",
-    };
+    // Get the stored organization ID if not provided
+    const storedOrganizationId = await getStoredLinkedInOrganizationId(companyId);
+    const finalOrganizationId = (organizationId as string) || storedOrganizationId;
 
-    const postsRes = await fetch(
-      `https://api.linkedin.com/v2/shares?q=owners&owners=urn:li:organization:${organizationId}&sortBy=LAST_MODIFIED&sharesPerOwner=10`,
-      { headers }
-    );
-
-    if (!postsRes.ok) {
-      const text = await postsRes.text();
-      return res.status(postsRes.status).json({ error: text });
+    if (!finalOrganizationId) {
+      return res.status(400).json({ error: "LinkedIn organization ID not found" });
     }
 
-    const data = await postsRes.json();
 
-    const organizationInfoRes = await fetch(
-      `https://api.linkedin.com/v2/organizations/${organizationId}?projection=(localizedName)`,
-      { headers }
+    // Fetch posts from LinkedIn API
+    const postsRes = await fetch(
+      `https://api.linkedin.com/v2/posts?q=author&author=urn:li:organization:${finalOrganizationId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
     );
 
-    const organizationInfo = await organizationInfoRes.json();
+    const postsJson = await postsRes.json();
 
-    const posts = (data.elements || []).map((post: any) => ({
-      id: post.activity,
-      text: post.text?.text ?? "",
-      created_time: post.created?.time ? new Date(post.created.time).toISOString() : "",
+    if (!postsRes.ok) {
+      console.error("Failed to fetch LinkedIn posts:", postsJson);
+      return res.status(500).json({ 
+        error: "Failed to fetch LinkedIn posts",
+        details: postsJson.message || "Unknown error"
+      });
+    }
+
+    const posts = postsJson.elements || [];
+
+    // Transform posts to match expected format
+    const transformedPosts = posts.map((post: any) => ({
+      id: post.id,
+      message: post.commentary || "", // LinkedIn uses 'commentary' field for post content
+      created_time: new Date(post.createdAt).toISOString(), // Convert timestamp to ISO string
+      media_type: post.content?.media?.mediaType || "TEXT",
+      media_url: post.content?.media?.url,
+      permalink: `https://www.linkedin.com/feed/update/${post.id.replace('urn:li:share:', '').replace('urn:li:ugcPost:', '')}`, // Generate LinkedIn permalink
+      author: post.author,
+      visibility: post.visibility,
+      lifecycleState: post.lifecycleState,
+      specificContent: post.content,
+      // LinkedIn specific metrics (these would need separate API calls for detailed insights)
+      likes: 0, // Would need separate API call
+      comments: 0, // Would need separate API call
+      shares: 0, // Would need separate API call
+      views: 0 // Would need separate API call
     }));
 
     res.status(200).json({
-      organizationInfo: {
-        id: organizationId,
-        name: organizationInfo.localizedName,
-      },
       platform: "linkedin",
-      posts,
+      organizationId: finalOrganizationId,
+      pageInfo: {
+        name: "LinkedIn Organization",
+        profilePicture: null,
+        id: finalOrganizationId,
+        username: "linkedin_org",
+        followers_count: 0,
+        media_count: posts.length
+      },
+      posts: transformedPosts,
+      total: posts.length
     });
-  } catch (error) {
+
+  } catch (error: any) {
     console.error("Error fetching LinkedIn posts:", error);
-    res.status(500).json({ error: "Failed to fetch LinkedIn posts" });
+    res.status(500).json({ 
+      error: "Failed to fetch LinkedIn posts",
+      details: error.message 
+    });
   }
 }

@@ -26,14 +26,34 @@ interface LinkedInStats {
 
 interface LinkedInPost {
   id: string;
-  text?: string;
+  message: string;
   created_time: string;
+  media_type: string;
+  media_url?: string;
+  permalink?: string;
+  author?: any;
+  visibility?: any;
+  lifecycleState?: string;
+  specificContent?: any;
+  likes: number;
+  comments: number;
+  shares: number;
+  views: number;
 }
 
 interface LinkedInPostsResponse {
-  organizationInfo: { name: string; id: string };
   platform: string;
+  organizationId: string;
+  pageInfo: {
+    name: string;
+    profilePicture: string | null;
+    id: string;
+    username: string;
+    followers_count: number;
+    media_count: number;
+  };
   posts: LinkedInPost[];
+  total: number;
 }
 
 interface LinkedInState {
@@ -43,6 +63,9 @@ interface LinkedInState {
   statusPosts: "idle" | "loading" | "succeeded" | "failed";
   errorStats: string | null;
   errorPosts: string | null;
+  progressiveStats: any | null;
+  statusProgressiveStats: "idle" | "loading" | "succeeded" | "failed";
+  errorProgressiveStats: string | null;
 }
 
 // --- Initial State ---
@@ -53,6 +76,9 @@ const initialState: LinkedInState = {
   statusPosts: "idle",
   errorStats: null,
   errorPosts: null,
+  progressiveStats: null,
+  statusProgressiveStats: "idle",
+  errorProgressiveStats: null,
 };
 
 // --- Thunks ---
@@ -194,11 +220,11 @@ export const fetchLinkedInStats = createAsyncThunk<
 
 export const fetchLinkedInPosts = createAsyncThunk<
   LinkedInPostsResponse,
-  { organizationId: string; platform: string; since?: string; until?: string; datePreset?: string },
+  { organizationId?: string },
   { dispatch: AppDispatch; state: RootState }
 >(
   "linkedin/fetchPosts",
-  async ({ organizationId, platform, since = "", until = "", datePreset = "" }, { dispatch, getState }) => {
+  async ({ organizationId }, { dispatch, getState }) => {
     let state = getState();
 
     if (state.integrations.integrations.length === 0 && state.integrations.loading !== true) {
@@ -213,12 +239,12 @@ export const fetchLinkedInPosts = createAsyncThunk<
     }
 
     const integration = state.integrations.integrations.find(
-      (integration: { type: string }) => integration.type === platform.toUpperCase()
+      (integration: { type: string }) => integration.type === 'LINKEDIN'
     );
 
     if (!integration) throw new Error("No LinkedIn integration found");
 
-    const url = `/api/data/linkedin/posts?organizationId=${organizationId}&since=${since}&until=${until}&datePreset=${datePreset}`;
+    const url = `/api/data/linkedin/posts?organizationId=${organizationId || 'me'}`;
     const res = await fetch(url);
 
     if (!res.ok) {
@@ -410,7 +436,7 @@ const linkedinSlice = createSlice({
       
       if (state.progressiveStats) {
         // Remove from loading
-        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter((m: string) => m !== metric);
         // Add to completed
         if (!state.progressiveStats.completedMetrics.includes(metric)) {
           state.progressiveStats.completedMetrics.push(metric);
@@ -440,7 +466,7 @@ const linkedinSlice = createSlice({
       const { metric, error } = action.payload;
       if (state.progressiveStats) {
         // Remove from loading
-        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter(m => m !== metric);
+        state.progressiveStats.loadingMetrics = state.progressiveStats.loadingMetrics.filter((m: string) => m !== metric);
       }
     },
     completeProgressiveLinkedInFetch: (state) => {

@@ -7,10 +7,10 @@ import { userService } from "@/services/userService";
 import { integrationsService } from "@/services/integrationsService";
 import { linkedinService } from "@/services/linkedinService";
 import { facebookService } from "@/services/facebookService";
-import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
-import { fetchFacebookStats } from "@/toolkit/facebookData/reducer";
+import { fetchLinkedInStats, fetchLinkedInPosts } from "@/toolkit/linkedInData/reducer";
+import { fetchFacebookStats, fetchFacebookPosts } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
-import { fetchInstagramStats } from "@/toolkit/instagramData/reducer";
+import { fetchInstagramStats, fetchInstagramPosts } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
 import { AppDispatch } from "@/toolkit";
@@ -79,31 +79,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   const defaultLinkedInOrgId = '90362182'; // This should come from your database
                   
                   try {
-                                      await dispatch(fetchLinkedInStats({
-                    organizationId: defaultLinkedInOrgId,
-                    platform: 'linkedin',
-                    since: '',
-                    until: '',
-                    datePreset: 'last_30_days'
-                  })).unwrap();
-                  
-                  toast.success('LinkedIn data loaded successfully');
-                } catch (error: any) {
-                  // Provide more specific error messages based on the error
-                  if (error.message?.includes('access token not found')) {
-                    toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
-                  } else if (error.message?.includes('Unauthorized')) {
-                    toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
-                  } else {
-                    toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
+                    // Fetch LinkedIn stats
+                    await dispatch(fetchLinkedInStats({
+                      organizationId: defaultLinkedInOrgId,
+                      platform: 'linkedin',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    // Fetch LinkedIn posts
+                    await dispatch(fetchLinkedInPosts({
+                      organizationId: defaultLinkedInOrgId
+                    })).unwrap();
+                    
+                    toast.success('LinkedIn data and posts loaded successfully');
+                  } catch (error: any) {
+                    // Provide more specific error messages based on the error
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
+                    } else {
+                      toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
+                    }
                   }
-                }
                 } else if (integration.type === 'FACEBOOK') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured
                   const defaultPageId = 'me'; // This should come from your database
                   
                   try {
+                    // Fetch Facebook stats
                     await dispatch(fetchFacebookStats({
                       pageId: defaultPageId,
                       platform: 'facebook',
@@ -112,7 +119,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    toast.success('Facebook data loaded successfully');
+                    // Fetch Facebook posts
+                    await dispatch(fetchFacebookPosts({
+                      pageId: defaultPageId,
+                      platform: 'facebook',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    toast.success('Facebook data and posts loaded successfully');
                   } catch (error: any) {
                     console.error(`❌ Facebook error:`, error);
                     if (error.message?.includes('access token not found')) {
@@ -124,16 +140,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                     }
                   }
                 } else if (integration.type === 'INSTAGRAM') {
-                  console.log(`📸 Processing Instagram integration for: ${integration.type}`);
+                  console.log(`📸 Processing Instagram integration for: ${integration.type}, accountId: ${integration.accountId}`);
                   try {
-                    await dispatch(fetchInstagramStats({
+                    // First fetch Instagram stats to get the username
+                    const statsResult = await dispatch(fetchInstagramStats({
                       platform: 'instagram',
                       since: '',
                       until: '',
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    toast.success('Instagram data loaded successfully');
+                    // Then fetch Instagram posts using the accountId from integration and username from stats
+                    await dispatch(fetchInstagramPosts({
+                      accountId: integration.accountId || 'me', // Use accountId from integration table
+                      username: statsResult.userInfo?.username // Use username from stats
+                    })).unwrap();
+                    
+                    toast.success('Instagram data and posts loaded successfully');
                   } catch (error: any) {
                     console.error(`❌ Instagram error:`, error);
                     if (error.message?.includes('access token not found')) {
