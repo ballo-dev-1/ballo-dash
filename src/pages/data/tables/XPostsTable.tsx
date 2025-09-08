@@ -2,7 +2,7 @@ import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
-// import xIcon from "@/assets/images/socials/x.png"; // X icon not available
+import xIcon from "@/assets/images/socials/x_icon.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
 
@@ -200,23 +200,16 @@ const XPostsTable: React.FC<Props> = ({
                 </h5>
 
                 <div className="d-flex justify-content-center align-items-center">
-                  <div
-                    style={{
-                      width: 20,
-                      height: 20,
-                      backgroundColor: "#000",
-                      color: "#fff",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      marginRight: 8,
+                  <Image
+                    src={xIcon}
+                    alt="X icon"
+                    style={{ 
+                      objectFit: "contain", 
+                      width: 20, 
+                      height: 20, 
+                      marginRight: 8 
                     }}
-                  >
-                    X
-                  </div>
+                  />
                   X
                 </div>
               </div>
