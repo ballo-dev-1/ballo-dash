@@ -38,6 +38,28 @@ export default async function handler(
       return res.status(400).json({ error: "LinkedIn organization ID not found" });
     }
 
+    // Fetch organization details to get the actual name
+    let organizationName = "LinkedIn Organization";
+    try {
+      const orgRes = await fetch(
+        `https://api.linkedin.com/v2/organizations/${finalOrganizationId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        }
+      );
+
+      if (orgRes.ok) {
+        const orgData = await orgRes.json();
+        organizationName = orgData.localizedName || orgData.name || "LinkedIn Organization";
+        console.log("✅ Retrieved LinkedIn organization name:", organizationName);
+      } else {
+        console.log("⚠️ Failed to fetch organization details, using default name");
+      }
+    } catch (orgError) {
+      console.log("⚠️ Error fetching organization details:", orgError);
+    }
 
     // Fetch posts from LinkedIn API
     const postsRes = await fetch(
@@ -84,7 +106,7 @@ export default async function handler(
       platform: "linkedin",
       organizationId: finalOrganizationId,
       pageInfo: {
-        name: "LinkedIn Organization",
+        name: organizationName,
         profilePicture: null,
         id: finalOrganizationId,
         username: "linkedin_org",
