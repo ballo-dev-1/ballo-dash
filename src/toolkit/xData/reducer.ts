@@ -26,14 +26,31 @@ interface XStats {
 
 interface XPost {
   id: string;
-  text?: string;
-  created_at: string;
+  message: string;
+  created_time: string;
+  media_type: string;
+  public_metrics: {
+    retweet_count: number;
+    like_count: number;
+    reply_count: number;
+    quote_count: number;
+    impression_count: number;
+  };
 }
 
 interface XPostsResponse {
-  userInfo: { name: string; username: string; id: string };
   platform: string;
+  accountId: string;
+  pageInfo: {
+    name: string;
+    profilePicture: string | null;
+    id: string;
+    username: string;
+    followers_count: number;
+    media_count: number;
+  };
   posts: XPost[];
+  total: number;
 }
 
 interface ProgressiveXStats {
@@ -196,6 +213,32 @@ export const fetchXStats = createAsyncThunk<
   }
 );
 
+export const fetchXPosts = createAsyncThunk<
+  XPostsResponse,
+  { accountId: string; username?: string },
+  { dispatch: AppDispatch; state: RootState }
+>(
+  "x/fetchPosts",
+  async ({ accountId, username }, { rejectWithValue }) => {
+    try {
+      const url = `/api/data/x/posts?accountId=${accountId}${username ? `&username=${username}` : ''}`;
+      
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to fetch X posts: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+
+    } catch (error: any) {
+      return rejectWithValue(error.message || "Failed to fetch X posts");
+    }
+  }
+);
+
 // --- Slice ---
 const xDataSlice = createSlice({
   name: "xData",
@@ -322,6 +365,20 @@ const xDataSlice = createSlice({
       .addCase(fetchXStats.rejected, (state, action) => {
         state.statusStats = "failed";
         state.errorStats = action.error.message || "Failed to fetch X stats";
+      })
+      // fetchXPosts
+      .addCase(fetchXPosts.pending, (state) => {
+        state.statusPosts = "loading";
+        state.errorPosts = null;
+      })
+      .addCase(fetchXPosts.fulfilled, (state, action) => {
+        state.statusPosts = "succeeded";
+        state.posts = action.payload;
+        state.errorPosts = null;
+      })
+      .addCase(fetchXPosts.rejected, (state, action) => {
+        state.statusPosts = "failed";
+        state.errorPosts = action.payload as string || "Failed to fetch X posts";
       });
   },
 });

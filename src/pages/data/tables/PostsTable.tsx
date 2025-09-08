@@ -2,12 +2,13 @@ import React from "react";
 import FacebookPostsTable from "./FacebookPostsTable";
 import InstagramPostsTable from "./InstagramPostsTable";
 import LinkedInPostsTable from "./LinkedInPostsTable";
+import XPostsTable from "./XPostsTable";
 import GenericPostsTable from "./GenericPostsTable";
 
 interface Props {
   isExpanded: boolean;
   onToggleExpand: () => void;
-  platform: "facebook" | "linkedin" | "instagram" | "tiktok";
+  platform: "facebook" | "linkedin" | "instagram" | "x" | "tiktok";
   data: any;
 }
 
@@ -40,6 +41,15 @@ const PostsTable: React.FC<Props> = ({
     case "linkedin":
       return (
         <LinkedInPostsTable
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
+          data={data}
+        />
+      );
+    
+    case "x":
+      return (
+        <XPostsTable
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
           data={data}

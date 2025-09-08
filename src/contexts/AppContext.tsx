@@ -9,7 +9,7 @@ import { linkedinService } from "@/services/linkedinService";
 import { facebookService } from "@/services/facebookService";
 import { fetchLinkedInStats, fetchLinkedInPosts } from "@/toolkit/linkedInData/reducer";
 import { fetchFacebookStats, fetchFacebookPosts } from "@/toolkit/facebookData/reducer";
-import { fetchXStats } from "@/toolkit/xData/reducer";
+import { fetchXStats, fetchXPosts } from "@/toolkit/xData/reducer";
 import { fetchInstagramStats, fetchInstagramPosts } from "@/toolkit/instagramData/reducer";
 import { setCompany } from "@/toolkit/Company/reducer";
 import { setSelectedUser } from "@/toolkit/User/reducer";
@@ -173,7 +173,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   const username = integration.handle || 'GeorgeMsapenda'; // Default username, should come from integration handle
                   
                   try {
-                    await dispatch(fetchXStats({
+                    // First fetch X stats to get the accountId
+                    const statsResult = await dispatch(fetchXStats({
                       username,
                       platform: integration.type.toLowerCase(),
                       since: '',
@@ -181,7 +182,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                       datePreset: 'last_30_days'
                     })).unwrap();
                     
-                    toast.success(`${integration.type} data loaded successfully`);
+                    // Then fetch X posts using the accountId from stats
+                    if (statsResult.userId) {
+                      await dispatch(fetchXPosts({
+                        accountId: statsResult.userId,
+                        username: username
+                      })).unwrap();
+                    }
+                    
+                    toast.success(`${integration.type} data and posts loaded successfully`);
                   } catch (error: any) {
                     
                     // Provide more specific error messages based on the error
