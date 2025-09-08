@@ -7,7 +7,7 @@ import { userService } from "@/services/userService";
 import { integrationsService } from "@/services/integrationsService";
 import { linkedinService } from "@/services/linkedinService";
 import { facebookService } from "@/services/facebookService";
-import { fetchLinkedInStats } from "@/toolkit/linkedInData/reducer";
+import { fetchLinkedInStats, fetchLinkedInPosts } from "@/toolkit/linkedInData/reducer";
 import { fetchFacebookStats, fetchFacebookPosts } from "@/toolkit/facebookData/reducer";
 import { fetchXStats } from "@/toolkit/xData/reducer";
 import { fetchInstagramStats, fetchInstagramPosts } from "@/toolkit/instagramData/reducer";
@@ -79,25 +79,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   const defaultLinkedInOrgId = '90362182'; // This should come from your database
                   
                   try {
-                                      await dispatch(fetchLinkedInStats({
-                    organizationId: defaultLinkedInOrgId,
-                    platform: 'linkedin',
-                    since: '',
-                    until: '',
-                    datePreset: 'last_30_days'
-                  })).unwrap();
-                  
-                  toast.success('LinkedIn data loaded successfully');
-                } catch (error: any) {
-                  // Provide more specific error messages based on the error
-                  if (error.message?.includes('access token not found')) {
-                    toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
-                  } else if (error.message?.includes('Unauthorized')) {
-                    toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
-                  } else {
-                    toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
+                    // Fetch LinkedIn stats
+                    await dispatch(fetchLinkedInStats({
+                      organizationId: defaultLinkedInOrgId,
+                      platform: 'linkedin',
+                      since: '',
+                      until: '',
+                      datePreset: 'last_30_days'
+                    })).unwrap();
+                    
+                    // Fetch LinkedIn posts
+                    await dispatch(fetchLinkedInPosts({
+                      organizationId: defaultLinkedInOrgId
+                    })).unwrap();
+                    
+                    toast.success('LinkedIn data and posts loaded successfully');
+                  } catch (error: any) {
+                    // Provide more specific error messages based on the error
+                    if (error.message?.includes('access token not found')) {
+                      toast.error(`LinkedIn integration not set up. Please configure your LinkedIn integration first.`);
+                    } else if (error.message?.includes('Unauthorized')) {
+                      toast.error(`LinkedIn integration token expired. Please refresh your LinkedIn integration.`);
+                    } else {
+                      toast.error(`Failed to load LinkedIn data: ${error.message || 'Unknown error'}`);
+                    }
                   }
-                }
                 } else if (integration.type === 'FACEBOOK') {
                   // For now, we'll use a default page ID since we don't have social profiles set up yet
                   // TODO: Get this from social profiles when they're properly configured

@@ -69,3 +69,32 @@ export async function hasLinkedInIntegration(companyId: string): Promise<boolean
     return false;
   }
 }
+
+/**
+ * Fetches stored LinkedIn organization ID from database for a given company
+ * @param companyId - The company ID to fetch the organization ID for
+ * @returns The LinkedIn organization ID or null if not found
+ */
+export async function getStoredLinkedInOrganizationId(companyId: string): Promise<string | null> {
+  try {
+    const linkedInIntegration = await db
+      .select({ accountId: integrations.accountId })
+      .from(integrations)
+      .where(
+        and(
+          eq(integrations.companyId, companyId),
+          eq(integrations.type, 'LINKEDIN')
+        )
+      )
+      .limit(1);
+
+    if (!linkedInIntegration || linkedInIntegration.length === 0) {
+      return null;
+    }
+
+    return linkedInIntegration[0]?.accountId || null;
+  } catch (error) {
+    console.error("Error fetching LinkedIn organization ID:", error);
+    return null;
+  }
+}

@@ -1,6 +1,7 @@
 import React from "react";
 import FacebookPostsTable from "./FacebookPostsTable";
 import InstagramPostsTable from "./InstagramPostsTable";
+import LinkedInPostsTable from "./LinkedInPostsTable";
 import GenericPostsTable from "./GenericPostsTable";
 
 interface Props {
@@ -16,9 +17,6 @@ const PostsTable: React.FC<Props> = ({
   platform,
   data,
 }) => {
-  console.log("📊 PostsTable - Platform:", platform);
-  console.log("📊 PostsTable - Data:", data);
-
   // Render the appropriate component based on platform
   switch (platform) {
     case "facebook":
@@ -40,6 +38,14 @@ const PostsTable: React.FC<Props> = ({
       );
     
     case "linkedin":
+      return (
+        <LinkedInPostsTable
+          isExpanded={isExpanded}
+          onToggleExpand={onToggleExpand}
+          data={data}
+        />
+      );
+    
     case "tiktok":
     default:
       // For platforms without specific components, use the generic one
