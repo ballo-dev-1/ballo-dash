@@ -73,14 +73,50 @@ export default async function handler(
 
     const posts = postsJson.business_discovery?.media?.data || [];
 
-    // Transform posts to match expected format
-    const transformedPosts = posts.map((post: any) => ({
-      id: post.id,
-      message: post.caption || "",
-      created_time: post.timestamp,
-      media_type: post.media_type,
-      media_url: post.media_url
-    }));
+    // Fetch insights for each post
+    const transformedPosts = await Promise.all(
+      posts.map(async (post: any) => {
+        let insights = {};
+        
+        try {
+          // Fetch insights for this specific post
+          const insightsRes = await fetch(
+            `https://graph.facebook.com/v19.0/${post.id}/insights?metric=reach,saved,likes,comments,shares,total_interactions,follows,profile_visits,profile_activity,views&access_token=${accessToken}`,
+            {
+              headers: {
+                'User-Agent': 'Ballo-Dashboard/1.0'
+              }
+            }
+          );
+
+          if (insightsRes.ok) {
+            const insightsJson = await insightsRes.json();
+            const insightsData = insightsJson.data || [];
+            
+            // Transform insights data into a more usable format
+            insights = insightsData.reduce((acc: any, metric: any) => {
+              acc[metric.name] = metric.values?.[0]?.value || 0;
+              return acc;
+            }, {});
+            
+            console.log(`📊 Fetched insights for post ${post.id}:`, insights);
+          } else {
+            console.log(`⚠️ Failed to fetch insights for post ${post.id}`);
+          }
+        } catch (insightsError) {
+          console.log(`⚠️ Error fetching insights for post ${post.id}:`, insightsError);
+        }
+
+        return {
+          id: post.id,
+          message: post.caption || "",
+          created_time: post.timestamp,
+          media_type: post.media_type,
+          media_url: post.media_url,
+          insights: insights
+        };
+      })
+    );
 
     res.status(200).json({
       platform: "instagram",

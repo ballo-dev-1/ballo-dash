@@ -30,9 +30,10 @@ type InstagramTransformedPost = {
   post_reach: number | string;
   engagement: number | string;
   comments: number | string;
-  reactions: string;
   shares: number | string;
   likes: number | string;
+  saved: number | string;
+  views: number | string;
   media_type: string;
   media_url?: string;
   permalink?: string;
@@ -55,21 +56,17 @@ function transformInstagramData(data: InstagramRawPost[]): InstagramTransformedP
 
       const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
-      // Instagram insights structure is different from Facebook
-      const post_reach = post?.insights?.impressions ?? "-";
-      const comments = post?.insights?.comments_count || 0;
-      const likes = post?.insights?.like_count || 0;
-      const shares = post?.insights?.shares_count || 0;
+      // Use the insights data from the API
+      const post_reach = post?.insights?.reach || post?.insights?.views || "-";
+      const comments = post?.insights?.comments || 0;
+      const likes = post?.insights?.likes || 0;
+      const shares = post?.insights?.shares || 0;
+      const saved = post?.insights?.saved || 0;
+      const total_interactions = post?.insights?.total_interactions || 0;
 
-      const engagement = likes + comments + shares;
+      // Use total_interactions if available, otherwise calculate from individual metrics
+      const engagement = total_interactions || (likes + comments + shares + saved);
 
-      const reactions = [
-        likes ? `❤️${likes}` : null,
-        comments ? `💬${comments}` : null,
-        shares ? `📤${shares}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
 
       return {
         created_time: formattedDate,
@@ -81,9 +78,10 @@ function transformInstagramData(data: InstagramRawPost[]): InstagramTransformedP
         post_reach,
         engagement,
         comments,
-        reactions,
         shares,
         likes,
+        saved,
+        views: post?.insights?.views || "-",
         media_type: post.media_type,
         media_url: post.media_url,
         permalink: post.permalink,
@@ -131,14 +129,29 @@ const InstagramPostsTable: React.FC<Props> = ({
       accessorKey: "engagement",
     },
     {
-      header: "Reactions",
-      enableColumnFilter: false,
-      accessorKey: "reactions",
-    },
-    {
       header: "Comments",
       enableColumnFilter: false,
       accessorKey: "comments",
+    },
+    {
+      header: "Shares",
+      enableColumnFilter: false,
+      accessorKey: "shares",
+    },
+    {
+      header: "Likes",
+      enableColumnFilter: false,
+      accessorKey: "likes",
+    },
+    {
+      header: "Saved",
+      enableColumnFilter: false,
+      accessorKey: "saved",
+    },
+    {
+      header: "Views",
+      enableColumnFilter: false,
+      accessorKey: "views",
     },
   ];
 

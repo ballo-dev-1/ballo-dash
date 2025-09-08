@@ -65,16 +65,8 @@ function transformFacebookData(data: FacebookRawPost[]): FacebookTransformedPost
 
       const engagement = likes + comments + shares + loves + wows + hahas + sorries + angers;
 
-      const reactions = [
-        likes ? `👍${likes}` : null,
-        loves ? `❤️${loves}` : null,
-        hahas ? `😂${hahas}` : null,
-        wows ? `😮${wows}` : null,
-        sorries ? `😢${sorries}` : null,
-        angers ? `😡${angers}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
+      // Reactions will be handled in the cell renderer
+      const reactions = "";
 
       return {
         created_time: formattedDate,
@@ -136,6 +128,113 @@ const FacebookPostsTable: React.FC<Props> = ({
       header: "Reactions",
       enableColumnFilter: false,
       accessorKey: "reactions",
+      cell: ({ row }: any) => {
+        const post = row.original;
+        const likes = post.likes || 0;
+        const loves = post.loves || 0;
+        const hahas = post.hahas || 0;
+        const wows = post.wows || 0;
+        const sorries = post.sorries || 0;
+        const angers = post.angers || 0;
+        
+        return (
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {likes > 0 && (
+              <span style={{
+                backgroundColor: 'lightgoldenrodyellow',
+                color: 'black',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                👍 {likes}
+              </span>
+            )}
+            {loves > 0 && (
+              <span style={{
+                backgroundColor: '#ffd9d9',
+                color: 'black',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                ❤️ {loves}
+              </span>
+            )}
+            {hahas > 0 && (
+              <span style={{
+                backgroundColor: '#ffd93d',
+                color: '#8b5a00',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                😂 {hahas}
+              </span>
+            )}
+            {wows > 0 && (
+              <span style={{
+                backgroundColor: '#ff9ff3',
+                color: 'white',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                😮 {wows}
+              </span>
+            )}
+            {sorries > 0 && (
+              <span style={{
+                backgroundColor: '#a8e6cf',
+                color: '#2d5a3d',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                😢 {sorries}
+              </span>
+            )}
+            {angers > 0 && (
+              <span style={{
+                backgroundColor: '#ff4757',
+                color: 'white',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                😡 {angers}
+              </span>
+            )}
+            {likes === 0 && loves === 0 && hahas === 0 && wows === 0 && sorries === 0 && angers === 0 && (
+              <span style={{ color: '#999', fontSize: '12px' }}>-</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "Comments",
