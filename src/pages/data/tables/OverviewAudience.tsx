@@ -7,7 +7,7 @@ import Image from "next/image";
 import facebookIcon from "@/assets/images/socials/facebook.png";
 import linkedinIcon from "@/assets/images/socials/linkedin.png";
 import instaIcon from "@/assets/images/socials/instagram.png";
-import xIcon from "@/assets/images/socials/x_icon.png";
+import xIcon from "../../../assets/images/socials/x_icon.png";
 import { 
   selectProgressiveFacebookStats,
   selectProgressiveFacebookStatus,

@@ -2,7 +2,7 @@ import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
-import xIcon from "@/assets/images/socials/x_icon.png";
+import xIcon from "../../../assets/images/socials/x_icon.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
 
@@ -59,12 +59,17 @@ function transformXData(data: XRawPost[]): XTransformedPost[] {
       const minutes = String(date.getMinutes()).padStart(2, "0");
       const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
-      const likes = post.public_metrics?.like_count || 0;
-      const retweets = post.public_metrics?.retweet_count || 0;
-      const replies = post.public_metrics?.reply_count || 0;
-      const quotes = post.public_metrics?.quote_count || 0;
-      const impressions = post.public_metrics?.impression_count || 0;
+      const likes = post.public_metrics?.like_count ?? 0;
+      const retweets = post.public_metrics?.retweet_count ?? 0;
+      const replies = post.public_metrics?.reply_count ?? 0;
+      const quotes = post.public_metrics?.quote_count ?? 0;
+      const impressions = post.public_metrics?.impression_count ?? 0;
       const engagement = likes + retweets + replies + quotes;
+
+      // Helper function to format values - use 0 for actual zeros, - for unavailable
+      const formatValue = (value: number | undefined, fallback: string = "-") => {
+        return value !== undefined ? value : fallback;
+      };
 
       return {
         created_time: formattedDate,
@@ -72,15 +77,15 @@ function transformXData(data: XRawPost[]): XTransformedPost[] {
         truncatedMessage: post.message.length > 100 
           ? `${post.message.substring(0, 100)}...` 
           : post.message,
-        post_reach: impressions || "-",
-        engagement: engagement || "-",
-        comments: replies || "-",
-        reactions: likes ? `❤️ ${likes}` : "-",
-        shares: retweets || "-",
-        likes: likes || "-",
-        retweets: retweets || "-",
-        quotes: quotes || "-",
-        impressions: impressions || "-",
+        post_reach: formatValue(impressions),
+        engagement: formatValue(engagement),
+        comments: formatValue(replies),
+        reactions: likes > 0 ? `❤️ ${likes}` : (likes === 0 ? "0" : "-"),
+        shares: formatValue(retweets),
+        likes: formatValue(likes),
+        retweets: formatValue(retweets),
+        quotes: formatValue(quotes),
+        impressions: formatValue(impressions),
         media_type: post.media_type || "TEXT",
         permalink: `https://x.com/i/web/status/${post.id}`
       };
