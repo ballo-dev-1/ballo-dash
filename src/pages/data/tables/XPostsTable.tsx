@@ -2,7 +2,7 @@ import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
-import xIcon from "../../../assets/images/socials/x_icon.png";
+import xIcon from "../../../assets/images/socials/X_icon.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
 
