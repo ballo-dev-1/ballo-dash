@@ -2,7 +2,7 @@ import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
-import instaIcon from "@/assets/images/socials/instagram.png";
+import xIcon from "../../../assets/images/socials/X_icon.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
 
@@ -12,38 +12,42 @@ interface Props {
   data: any;
 }
 
-type InstagramRawPost = {
+type XRawPost = {
   id: string;
-  message?: string; // Changed from caption to message
-  created_time: string; // Changed from timestamp to created_time
+  message: string;
+  created_time: string;
   media_type: string;
-  media_url?: string;
-  permalink?: string;
-  thumbnail_url?: string;
-  insights?: any;
+  public_metrics: {
+    retweet_count: number;
+    like_count: number;
+    reply_count: number;
+    quote_count: number;
+    impression_count: number;
+  };
 };
 
-type InstagramTransformedPost = {
+type XTransformedPost = {
   created_time: string; // format: dd/mm/yyyy hh:mm
   message: string;
   truncatedMessage: string;
   post_reach: number | string;
   engagement: number | string;
   comments: number | string;
+  reactions: string;
   shares: number | string;
   likes: number | string;
-  saved: number | string;
-  views: number | string;
+  retweets: number | string;
+  quotes: number | string;
+  impressions: number | string;
   media_type: string;
-  media_url?: string;
-  permalink?: string;
+  permalink: string;
 };
 
-function transformInstagramData(data: InstagramRawPost[]): InstagramTransformedPost[] {
-  console.log('🚀🚀🚀transformInstagramData', data);
+function transformXData(data: XRawPost[]): XTransformedPost[] {
+  console.log('🐦🐦🐦transformXData', data);
   return data
     .filter(
-      (post): post is InstagramRawPost & { message: string; created_time: string } =>
+      (post): post is XRawPost & { message: string; created_time: string } =>
         !!post.message && !!post.created_time
     )
     .map((post) => {
@@ -53,51 +57,50 @@ function transformInstagramData(data: InstagramRawPost[]): InstagramTransformedP
       const year = date.getFullYear();
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
-
       const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
-      // Use the insights data from the API
-      const post_reach = post?.insights?.reach || post?.insights?.views || "-";
-      const comments = post?.insights?.comments || 0;
-      const likes = post?.insights?.likes || 0;
-      const shares = post?.insights?.shares || 0;
-      const saved = post?.insights?.saved || 0;
-      const total_interactions = post?.insights?.total_interactions || 0;
+      const likes = post.public_metrics?.like_count ?? 0;
+      const retweets = post.public_metrics?.retweet_count ?? 0;
+      const replies = post.public_metrics?.reply_count ?? 0;
+      const quotes = post.public_metrics?.quote_count ?? 0;
+      const impressions = post.public_metrics?.impression_count ?? 0;
+      const engagement = likes + retweets + replies + quotes;
 
-      // Use total_interactions if available, otherwise calculate from individual metrics
-      const engagement = total_interactions || (likes + comments + shares + saved);
-
+      // Helper function to format values - use 0 for actual zeros, - for unavailable
+      const formatValue = (value: number | undefined, fallback: string = "-") => {
+        return value !== undefined ? value : fallback;
+      };
 
       return {
         created_time: formattedDate,
         message: post.message,
-        truncatedMessage:
-          post.message.length > 50
-            ? post.message.slice(0, 50) + "..."
-            : post.message,
-        post_reach,
-        engagement,
-        comments,
-        shares,
-        likes,
-        saved,
-        views: post?.insights?.views || "-",
-        media_type: post.media_type,
-        media_url: post.media_url,
-        permalink: post.permalink,
+        truncatedMessage: post.message.length > 100 
+          ? `${post.message.substring(0, 100)}...` 
+          : post.message,
+        post_reach: formatValue(impressions),
+        engagement: formatValue(engagement),
+        comments: formatValue(replies),
+        reactions: likes > 0 ? `❤️ ${likes}` : (likes === 0 ? "0" : "-"),
+        shares: formatValue(retweets),
+        likes: formatValue(likes),
+        retweets: formatValue(retweets),
+        quotes: formatValue(quotes),
+        impressions: formatValue(impressions),
+        media_type: post.media_type || "TEXT",
+        permalink: `https://x.com/i/web/status/${post.id}`
       };
     });
 }
 
-const InstagramPostsTable: React.FC<Props> = ({
+const XPostsTable: React.FC<Props> = ({
   isExpanded,
   onToggleExpand,
   data,
 }) => {
-  console.log("📸 InstagramPostsTable - Data:", data);
+  console.log("🐦 XPostsTable - Data:", data);
 
   const transformedData = Array.isArray(data?.posts)
-    ? transformInstagramData(data?.posts)
+    ? transformXData(data?.posts)
     : [];
 
   const postData = transformedData;
@@ -114,11 +117,6 @@ const InstagramPostsTable: React.FC<Props> = ({
       accessorKey: "truncatedMessage",
     },
     {
-      header: "Media Type",
-      enableColumnFilter: false,
-      accessorKey: "media_type",
-    },
-    {
       header: "Reach",
       enableColumnFilter: false,
       accessorKey: "post_reach",
@@ -127,6 +125,11 @@ const InstagramPostsTable: React.FC<Props> = ({
       header: "Engagement",
       enableColumnFilter: false,
       accessorKey: "engagement",
+    },
+    {
+      header: "Reactions",
+      enableColumnFilter: false,
+      accessorKey: "reactions",
     },
     {
       header: "Comments",
@@ -144,14 +147,19 @@ const InstagramPostsTable: React.FC<Props> = ({
       accessorKey: "likes",
     },
     {
-      header: "Saved",
+      header: "Retweets",
       enableColumnFilter: false,
-      accessorKey: "saved",
+      accessorKey: "retweets",
     },
     {
-      header: "Views",
+      header: "Quotes",
       enableColumnFilter: false,
-      accessorKey: "views",
+      accessorKey: "quotes",
+    },
+    {
+      header: "Impressions",
+      enableColumnFilter: false,
+      accessorKey: "impressions",
     },
   ];
 
@@ -182,7 +190,7 @@ const InstagramPostsTable: React.FC<Props> = ({
                       {data?.pageInfo?.profilePicture && (
                         <img
                           src={data?.pageInfo?.profilePicture}
-                          alt="Instagram account icon"
+                          alt="X account icon"
                           className="rounded-circle"
                           style={{
                             objectFit: "contain",
@@ -198,11 +206,16 @@ const InstagramPostsTable: React.FC<Props> = ({
 
                 <div className="d-flex justify-content-center align-items-center">
                   <Image
-                    src={instaIcon}
-                    alt="Instagram icon"
-                    style={{ objectFit: "contain", width: 20, marginRight: 8 }}
+                    src={xIcon}
+                    alt="X icon"
+                    style={{ 
+                      objectFit: "contain", 
+                      width: 20, 
+                      height: 20, 
+                      marginRight: 8 
+                    }}
                   />
-                  Instagram
+                  X
                 </div>
               </div>
             </Card.Header>
@@ -210,9 +223,9 @@ const InstagramPostsTable: React.FC<Props> = ({
               <div className="overflow-hidden post-table">
                 {!hasData && !isLoading ? (
                   <div className="text-center py-4">
-                    <p className="text-muted">No posts found for this Instagram account.</p>
+                    <p className="text-muted">No posts found for this X account.</p>
                     <small className="text-muted">
-                      Make sure your Instagram integration is connected and has posts.
+                      Make sure your X integration is connected and has posts.
                     </small>
                   </div>
                 ) : (
@@ -235,4 +248,4 @@ const InstagramPostsTable: React.FC<Props> = ({
   );
 };
 
-export default InstagramPostsTable;
+export default XPostsTable;

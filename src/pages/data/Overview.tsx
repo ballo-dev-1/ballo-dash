@@ -41,7 +41,7 @@ const Overview = () => {
   useAutoDataRefresh();
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
-    {}
+    { 1: true, 2: true }
   );
 
   const toggleExpand = (index: number) => {

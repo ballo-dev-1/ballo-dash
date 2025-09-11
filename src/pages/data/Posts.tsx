@@ -14,6 +14,7 @@ import TopPosts from "./tables/TopPosts";
 import { fetchFacebookPosts, selectFacebookPosts, selectFacebookStatusPosts } from "@/toolkit/facebookData/reducer";
 import { fetchInstagramPosts, selectInstagramPosts, selectInstagramPostsStatus, fetchInstagramStats, selectInstagramStats } from "@/toolkit/instagramData/reducer";
 import { fetchLinkedInPosts, selectLinkedInPosts, selectLinkedInStatusPosts } from "@/toolkit/linkedInData/reducer";
+import { fetchXPosts, selectXPosts, selectXPostsStatus, fetchXStats, selectXStats } from "@/toolkit/xData/reducer";
 import { selectIntegrations } from "@/toolkit/Integrations/reducer";
 import { useAppDispatch } from "@/toolkit/hooks";
 import { useSelector } from "react-redux";
@@ -31,10 +32,13 @@ const Posts: React.FC<Props> = ({ data }) => {
   const instagramStats = useSelector(selectInstagramStats);
   const linkedinPosts = useSelector(selectLinkedInPosts);
   const linkedinPostsStatus = useSelector(selectLinkedInStatusPosts);
+  const xPosts = useSelector(selectXPosts);
+  const xPostsStatus = useSelector(selectXPostsStatus);
+  const xStats = useSelector(selectXStats);
   const integrations = useSelector(selectIntegrations);
 
   const [expandedCols, setExpandedCols] = useState<{ [key: number]: boolean }>(
-    {}
+    { 1: true, 2: true, 3: true, 4: true }
   );
 
   const toggleExpand = (index: number) => {
@@ -106,9 +110,47 @@ const Posts: React.FC<Props> = ({ data }) => {
     }
   };
 
+  const handleRefreshXPosts = async () => {
+    try {
+      // Get X integration to get the handle
+      const xIntegration = integrations?.find((integration: any) => integration.type === 'X');
+      const username = xIntegration?.handle || 'GeorgeMsapenda';
+      
+      // First get the current X stats to get the accountId
+      let accountId = xStats?.userId;
+      
+      // If no accountId in current stats, fetch stats first
+      if (!accountId) {
+        const statsResult = await dispatch(fetchXStats({
+          username: username,
+          platform: 'x',
+          since: '',
+          until: '',
+          datePreset: 'last_30_days'
+        })).unwrap();
+        accountId = statsResult.userId;
+      }
+      
+      // Then fetch X posts with the accountId from stats and username
+      if (accountId) {
+        await dispatch(fetchXPosts({
+          accountId: accountId,
+          username: username
+        })).unwrap();
+        console.log(`✅ X posts refreshed successfully for accountId: ${accountId}`);
+      } else {
+        console.error('❌ No accountId available for X posts');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh X posts:', error);
+    }
+  };
+
   const tableKey1 = 1;
   const tableKey2 = 2;
   const tableKey3 = 3;
+  const tableKey4 = 4;
+  
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center my-4 mx-2">
@@ -123,7 +165,7 @@ const Posts: React.FC<Props> = ({ data }) => {
             data={facebookPosts}
           />
         </Col>
-        <Col md={6}>
+        <Col md={expandedCols[tableKey2] ? 12 : 6}>
           <PostsTable
             isExpanded={!!expandedCols[tableKey2]}
             onToggleExpand={() => toggleExpand(tableKey2)}
@@ -139,6 +181,16 @@ const Posts: React.FC<Props> = ({ data }) => {
             onToggleExpand={() => toggleExpand(tableKey3)}
             platform="linkedin"
             data={linkedinPosts}
+          />
+        </Col>
+      </Row>
+      <Row>
+        <Col md={expandedCols[tableKey4] ? 12 : 6}>
+          <PostsTable
+            isExpanded={!!expandedCols[tableKey4]}
+            onToggleExpand={() => toggleExpand(tableKey4)}
+            platform="x"
+            data={xPosts}
           />
         </Col>
         {/* <Col md={6}>

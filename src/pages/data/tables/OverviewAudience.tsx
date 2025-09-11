@@ -3,6 +3,11 @@ import { Card, Col, Row } from "react-bootstrap";
 import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
+import Image from "next/image";
+import facebookIcon from "@/assets/images/socials/facebook.png";
+import linkedinIcon from "@/assets/images/socials/linkedin.png";
+import instaIcon from "@/assets/images/socials/instagram.png";
+import xIcon from "../../../assets/images/socials/X_icon.png";
 import { 
   selectProgressiveFacebookStats,
   selectProgressiveFacebookStatus,
@@ -307,11 +312,54 @@ const OverviewAudience: React.FC<OverviewAudienceProps> = ({
 
   const description = "Snapshot of each platform's performance";
 
+  const getPlatformIcon = (platform: string) => {
+    if (!platform || typeof platform !== 'string') {
+      return null;
+    }
+    
+    switch (platform.toLowerCase()) {
+      case 'facebook':
+        return facebookIcon;
+      case 'linkedin':
+        return linkedinIcon;
+      case 'instagram':
+        return instaIcon;
+      case 'x':
+      case 'twitter':
+      case 'x (twitter)':
+        return xIcon;
+      default:
+        return null;
+    }
+  };
+
   const columns = [
     {
       header: "Platform",
       enableColumnFilter: false,
       accessorKey: "platform",
+      cell: ({ getValue }: any) => {
+        const platform = getValue();
+        const icon = getPlatformIcon(platform);
+        
+        return (
+          <div className="d-flex align-items-center">
+            {icon ? (
+              <Image
+                src={icon}
+                alt={`${platform || 'Unknown'} icon`}
+                style={{ 
+                  objectFit: "contain", 
+                  width: 20, 
+                  height: 20, 
+                  marginRight: 8 
+                }}
+              />
+            ) : null}
+            <span>{platform || 'Unknown'}</span>
+          </div>
+        );
+      },
     },
     {
       header: "Page Name",

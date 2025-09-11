@@ -3,6 +3,11 @@ import { Card, Col, Row } from "react-bootstrap";
 import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
+import Image from "next/image";
+import facebookIcon from "@/assets/images/socials/facebook.png";
+import linkedinIcon from "@/assets/images/socials/linkedin.png";
+import instaIcon from "@/assets/images/socials/instagram.png";
+import xIcon from "../../../assets/images/socials/X_icon.png";
 import { 
   selectProgressiveFacebookStats,
   selectProgressiveFacebookStatus,
@@ -16,8 +21,12 @@ import {
   selectInstagramStats
 } from "@/toolkit/instagramData/reducer";
 import { 
-  selectProgressiveXStats
+  selectProgressiveXStats,
+  selectXPosts
 } from "@/toolkit/xData/reducer";
+import { 
+  selectLinkedInPosts
+} from "@/toolkit/linkedInData/reducer";
 import DataTransformationService, { PlatformOverview } from "@/services/dataTransformationService";
 
 interface OverviewAccountsProps {
@@ -64,6 +73,28 @@ const transformInstagramData = (instagramData: any): PlatformOverview | null => 
   return DataTransformationService.getInstance().transformInstagramData(instagramData);
 };
 
+const getLastPostDate = (postsData: any): string => {
+  if (!postsData || !postsData.posts || !Array.isArray(postsData.posts) || postsData.posts.length === 0) {
+    return "-";
+  }
+  
+  // Sort posts by created_time and get the most recent one
+  const sortedPosts = [...postsData.posts].sort((a: any, b: any) => {
+    const dateA = new Date(a.created_time || a.created_at || 0);
+    const dateB = new Date(b.created_time || b.created_at || 0);
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  const lastPost = sortedPosts[0];
+  if (!lastPost) return "-";
+  
+  const postDate = new Date(lastPost.created_time || lastPost.created_at);
+  if (isNaN(postDate.getTime())) return "-";
+  
+  // Format with date and time like Facebook and Instagram
+  return postDate.toLocaleString();
+};
+
 const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   facebook,
   linkedInData,
@@ -85,6 +116,8 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const progressiveLinkedInData = useSelector(selectProgressiveLinkedInStats);
   const progressiveXData = useSelector(selectProgressiveXStats);
   const instagramStats = useSelector(selectInstagramStats);
+  const linkedinPosts = useSelector(selectLinkedInPosts);
+  const xPosts = useSelector(selectXPosts);
 
 
 
@@ -118,7 +151,13 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     : transformLinkedInData(linkedInData);
     
   if (transformedLinkedIn) {
-    linkedinDataArray.push(transformedLinkedIn);
+    // Add last post date from LinkedIn posts
+    const lastPostDate = getLastPostDate(linkedinPosts);
+    const linkedinWithLastPost = {
+      ...transformedLinkedIn,
+      last_post_date: lastPostDate
+    };
+    linkedinDataArray.push(linkedinWithLastPost);
   }
 
   // Transform Instagram data
@@ -138,7 +177,13 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     : xData ? transformXData(xData) : null;
   const xDataArray: PlatformOverview[] = [];
   if (transformedX) {
-    xDataArray.push(transformedX);
+    // Add last post date from X posts
+    const lastPostDate = getLastPostDate(xPosts);
+    const xWithLastPost = {
+      ...transformedX,
+      last_post_date: lastPostDate
+    };
+    xDataArray.push(xWithLastPost);
   } else if (progressiveXData || xData) {
     console.log("🐦 X Data available but transformation failed:", progressiveXData || xData);
   } else {
@@ -165,11 +210,54 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
 
   const description = "Snapshot of each platform's performance";
 
+  const getPlatformIcon = (platform: string) => {
+    if (!platform || typeof platform !== 'string') {
+      return null;
+    }
+    
+    switch (platform.toLowerCase()) {
+      case 'facebook':
+        return facebookIcon;
+      case 'linkedin':
+        return linkedinIcon;
+      case 'instagram':
+        return instaIcon;
+      case 'x':
+      case 'twitter':
+      case 'x (twitter)':
+        return xIcon;
+      default:
+        return null;
+    }
+  };
+
   const columns = [
     {
       header: "Platform",
       enableColumnFilter: false,
       accessorKey: "platform",
+      cell: ({ getValue }: any) => {
+        const platform = getValue();
+        const icon = getPlatformIcon(platform);
+        
+        return (
+          <div className="d-flex align-items-center">
+            {icon ? (
+              <Image
+                src={icon}
+                alt={`${platform || 'Unknown'} icon`}
+                style={{ 
+                  objectFit: "contain", 
+                  width: 20, 
+                  height: 20, 
+                  marginRight: 8 
+                }}
+              />
+            ) : null}
+            <span>{platform || 'Unknown'}</span>
+          </div>
+        );
+      },
     },
     {
       header: "Page Name",
