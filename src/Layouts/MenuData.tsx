@@ -52,7 +52,7 @@ const menuItems = [
     id: "statistics",
     label: "Statistics",
     icon: "ph-duotone ph-projector-screen-chart",
-    link: "/widget/w_statistics",
+    link: "/statistics",
     dataPage: "w_statistics",
   },
   {

@@ -7,11 +7,13 @@ import { Row, Col } from "react-bootstrap";
 interface BreadcrumbItemProps {
   mainTitle: string;
   subTitle: string;
+  showPageHeader?: boolean;
 }
 
 const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
   mainTitle,
   subTitle,
+  showPageHeader = true,
 }) => {
   return (
     <React.Fragment>
@@ -38,12 +40,14 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
                 )}
               </ul>
             </Col>
-            <Col md={12}>
+            {showPageHeader && (
+              <Col md={12}>
               <div className="page-header-title d-flex gap-3 align-items-center">
                 <h2 className="mb-0">{subTitle}</h2>
                 {/* <UpdateIntegrationModal /> */}
               </div>
             </Col>
+            )}
           </Row>
         </div>
       </div>
