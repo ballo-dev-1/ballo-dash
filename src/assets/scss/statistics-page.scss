@@ -94,6 +94,9 @@
   .platforms-column {
     height: fit-content;
     padding-block: 2rem;
+    position: sticky;
+    top: 6rem;
+    z-index: 10;
   }
 
   .audience-chart-container {
