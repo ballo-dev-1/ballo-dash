@@ -59,8 +59,15 @@ const horizontalData = [
         id: "statistics",
         label: "Statistics",
         icon: "ph-duotone ph-projector-screen-chart",
-        link: "/widget/w_statistics",
+        link: "/statistics",
         dataPage: "w_statistics"
+      },
+      {
+        id: "reports",
+        label: "Reports",
+        icon: "custom:/assets/images/reports-icon.png",
+        link: "/reports",
+        dataPage: "w_reports"
       },
       {
         id: "user",

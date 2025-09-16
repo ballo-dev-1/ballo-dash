@@ -163,6 +163,7 @@ const Posts: React.FC<Props> = ({ data }) => {
             onToggleExpand={() => toggleExpand(tableKey1)}
             platform="facebook"
             data={facebookPosts}
+            isLoading={facebookPostsStatus === "loading"}
           />
         </Col>
         <Col md={expandedCols[tableKey2] ? 12 : 6}>
@@ -181,6 +182,7 @@ const Posts: React.FC<Props> = ({ data }) => {
             onToggleExpand={() => toggleExpand(tableKey3)}
             platform="linkedin"
             data={linkedinPosts}
+            isLoading={linkedinPostsStatus === "loading"}
           />
         </Col>
       </Row>

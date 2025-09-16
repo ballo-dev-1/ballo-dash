@@ -1,0 +1,125 @@
+.statistics-page {
+  .statistics-active-platform {
+    background-color: #13226f !important;       
+    color: #fff !important;
+    border-radius: 0.375rem;
+  }
+
+  .funnel-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .metrics-left-panel {
+    .metric-item {
+      .metric-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+      }
+      .metric-value {
+        font-size: 1.25rem;
+        color: #13226f;
+      }
+    }
+  }
+
+  .funnel-metrics {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .funnel-metric {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    
+    .metric-line {
+      width: 40px;
+      height: 1px;
+      background-color: #6c757d;
+      margin-right: 10px;
+    }
+    
+    .metric-content {
+      .metric-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 2px;
+      }
+      
+      .metric-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #13226f;
+        margin-bottom: 2px;
+      }
+      
+      .metric-change {
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // Position each metric around the funnel
+  .reach-metric {
+    top: 0;
+    right: 5%;
+  }
+
+  .engagement-metric {
+    top: 30%;
+    right: -2%;
+  }
+
+  .ctr-metric {
+    top: 55%;
+    right: 5%;
+  }
+
+  .messages-metric {
+    top: 78%;
+    right: 2%;
+  }
+
+  .platforms-column {
+    height: fit-content;
+    padding-block: 2rem;
+    position: sticky;
+    top: 6rem;
+    z-index: 10;
+  }
+
+  .audience-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 350px;
+    padding: 1rem;
+  }
+
+  .chart-controls {
+    .btn {
+      font-size: 0.875rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease-in-out;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+}
+
+

@@ -8,6 +8,7 @@ import { LAYOUT_LANGUAGES } from "@common/layoutConfig";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "src/toolkit";
 import { chanageLanguage } from "src/toolkit/themeLayouts/thunk";
+import Image from "next/image";
 
 const Sidebar = () => {
   const router = useRouter();
@@ -85,7 +86,9 @@ const Sidebar = () => {
                       className="pc-link"
                     >
                       <span className="pc-micon me-2">
-                        <i className={`${item.icon}`}></i>
+                      
+                          <i className={`${item.icon}`}></i>
+                        
                       </span>
                       <span className="pc-mtext">{t(item.label)}</span>
                       {item.badge ? (
@@ -136,17 +139,28 @@ const Sidebar = () => {
                           <li
                             className={`pc-item ${
                               isMenuActive(subItem) ? "active" : ""
-                            }`}
+                            } ${subItem.isHeader ? "pc-caption" : ""}`}
                             key={key}
                           >
-                            <Link
-                              className="pc-link"
-                              href={subItem.link || "#"}
-                              data-page={subItem.dataPage}
-                            >
-                              {/* {subItem.label} */}
-                              {t(subItem.label)}
-                            </Link>
+                            {subItem.isHeader ? (
+                              <span className="pc-link" style={{ cursor: "default", pointerEvents: "none" }}>
+                                <span className="pc-micon me-2">
+                                  <i className={`${subItem.icon}`}></i>
+                                </span>
+                                <span className="pc-mtext">{t(subItem.label)}</span>
+                              </span>
+                            ) : (
+                              <Link
+                                className="pc-link"
+                                href={subItem.link || "#"}
+                                data-page={subItem.dataPage}
+                              >
+                                <span className="pc-micon me-2">
+                                  <i className={`${subItem.icon}`}></i>
+                                </span>
+                                <span className="pc-mtext">{t(subItem.label)}</span>
+                              </Link>
+                            )}
                           </li>
                         ) : (
                           <li

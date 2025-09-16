@@ -2,8 +2,8 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/toolkit';
-import { fetchLinkedInStats } from '@/toolkit/linkedInData/reducer';
-import { fetchFacebookStats } from '@/toolkit/facebookData/reducer';
+import { fetchLinkedInStats, fetchLinkedInPosts } from '@/toolkit/linkedInData/reducer';
+import { fetchFacebookStats, fetchFacebookPosts } from '@/toolkit/facebookData/reducer';
 import { fetchXStats } from '@/toolkit/xData/reducer';
 import { fetchInstagramStats } from '@/toolkit/instagramData/reducer';
 import { useSelector } from 'react-redux';
@@ -26,26 +26,42 @@ export const useAutoDataRefresh = () => {
         // TODO: Get this from social profiles when they're properly configured
         const defaultLinkedInOrgId = '90362182'; // This should come from your database
         
-        await dispatch(fetchLinkedInStats({
-          organizationId: defaultLinkedInOrgId,
-          platform: 'linkedin',
-          since: '',
-          until: '',
-          datePreset: 'last_30_days'
-        })).unwrap();
+        // Fetch both stats and posts for LinkedIn
+        await Promise.all([
+          dispatch(fetchLinkedInStats({
+            organizationId: defaultLinkedInOrgId,
+            platform: 'linkedin',
+            since: '',
+            until: '',
+            datePreset: 'last_30_days'
+          })).unwrap(),
+          dispatch(fetchLinkedInPosts({
+            organizationId: defaultLinkedInOrgId
+          })).unwrap()
+        ]);
         
       } else if (integration.type === 'FACEBOOK') {
         // For now, we'll use a default page ID since we don't have social profiles set up yet
         // TODO: Get this from social profiles when they're properly configured
         const defaultPageId = 'me'; // This should come from your database
         
-        await dispatch(fetchFacebookStats({
-          pageId: defaultPageId,
-          platform: integration.type.toLowerCase(),
-          since: '',
-          until: '',
-          datePreset: 'last_30_days'
-        })).unwrap();
+        // Fetch both stats and posts for Facebook
+        await Promise.all([
+          dispatch(fetchFacebookStats({
+            pageId: defaultPageId,
+            platform: integration.type.toLowerCase(),
+            since: '',
+            until: '',
+            datePreset: 'last_30_days'
+          })).unwrap(),
+          dispatch(fetchFacebookPosts({
+            pageId: defaultPageId,
+            platform: integration.type.toLowerCase(),
+            since: '',
+            until: '',
+            datePreset: 'last_30_days'
+          })).unwrap()
+        ]);
         
       } else if (integration.type === 'INSTAGRAM') {
         // Instagram uses account ID-based fetching, no username needed

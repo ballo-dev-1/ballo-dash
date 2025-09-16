@@ -2,9 +2,10 @@ import { useRouter } from 'next/router';
 import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 import FeatherIcon from "feather-icons-react";
+import { useTranslation } from "react-i18next";
 
 interface MenuItem {
-  id: number;
+  id: number | string;
   label: string;
   type?: string;
   icon?: string;
@@ -12,122 +13,117 @@ interface MenuItem {
   badge?: string;
   dataPage?: string;
   submenu?: MenuItem[];
+  parentId?: string;
+  order?: number;
+  isHeader?: boolean;
 }
 
 const NestedMenu: React.FC<{ menuItems: MenuItem[] }> = ({ menuItems }) => {
   const router = useRouter();
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
+  const { t } = useTranslation();
 
-  const initializeOpenMenu = (items: MenuItem[], path: string): number | null => {
+  const initializeOpenMenu = (
+    items: MenuItem[],
+    path: string
+  ): number | string | null => {
     for (const item of items) {
       if (item.link === path) {
         return item.id;
       }
       if (item.submenu) {
-        const submenuOpenId = initializeOpenMenu(item.submenu, path);
-        if (submenuOpenId !== null) {
-          return item.id;
-        }
+        const found = initializeOpenMenu(item.submenu, path);
+        if (found) return found;
       }
     }
     return null;
   };
 
   useEffect(() => {
-    const storedOpenMenuId = localStorage.getItem("openMenuId");
-    if (storedOpenMenuId) {
-      setOpenMenuId(JSON.parse(storedOpenMenuId));
-    } else {
-      const initialOpenMenuId = initializeOpenMenu(menuItems, router.pathname);
-      setOpenMenuId(initialOpenMenuId);
+    const currentPath = router.pathname;
+    const activeMenuId = initializeOpenMenu(menuItems, currentPath);
+    if (activeMenuId) {
+      setOpenMenuId(activeMenuId);
     }
-  }, [menuItems, router.pathname]);
+  }, [router.pathname, menuItems]);
 
-  const handleMenuClick = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenMenuId(prevOpenMenuId => (prevOpenMenuId === id ? null : id));
+  const handleMenuClick = useCallback((id: number | string) => {
+    setOpenMenuId(prevId => prevId === id ? null : id);
+  }, []);
+
+  const isMenuActive = (item: MenuItem) => {
+    return router.pathname === item.link;
   };
 
-  useEffect(() => {
-    localStorage.setItem("openMenuId", JSON.stringify(openMenuId));
-  }, [openMenuId]);
+  const renderMenuItem = (item: MenuItem, level: number = 0) => {
+    const hasSubmenu = item.submenu && item.submenu.length > 0;
+    const isOpen = openMenuId === item.id;
+    const isActive = isMenuActive(item);
+    const indentStyle = { paddingLeft: `${level * 20}px` };
 
-  const hasActiveLink = useCallback(
-    (list: MenuItem[]) => {
-      if (!list) return false;
-      for (const menuItem of list) {
-        if (menuItem.link === router.pathname) {
-          return true;
-        } else if (menuItem.submenu && hasActiveLink(menuItem.submenu)) {
-          return true;
-        }
-      }
-      return false;
-    },
-    [router.pathname]
-  );
+    if (item.type === "HEADER") {
+      return (
+        <li key={item.id} className="pc-item pc-caption" style={indentStyle}>
+          <label>{t(item.label)}</label>
+        </li>
+      );
+    }
 
-  const hasOpenedSubMenu = useCallback(
-    (list: MenuItem[], openMenuId: number | null) => {
-      if (!list) return false;
-      for (const menuItem of list) {
-        if (menuItem.id === openMenuId) {
-          return true;
-        } else if (menuItem.submenu && hasOpenedSubMenu(menuItem.submenu, openMenuId)) {
-          return true;
-        }
-      }
-      return false;
-    },
-    [openMenuId]
-  );
-
-  const renderMenu = (items: MenuItem[]) => {
-    return items.map((item,index) => (
-      <li
-        key={index} //item.id
-        onClick={(e) => {
-          item.type !== "HEADER" && handleMenuClick(item.id, e);
-        }}
-        className={`pc-item ${item.type === "HEADER"
-          ? "pc-caption"
-          : item.type === "HASHMENU"
-            ? "pc-hashmenu"
-            : ""
-          } ${openMenuId === item.id || hasOpenedSubMenu(item.submenu || [], openMenuId)
-            ? "pc-trigger"
-            : ""
-          } ${item.link === router.pathname || hasActiveLink(item.submenu || [])
-            ? "active"
-            : ""}`}
-      >
-        {item.type === "HEADER" && <label>{item.label}</label>}
-        {item.type !== "HEADER" && (
-          <Link href={item.link || "#"} className="pc-link">
-            {item.icon && (
-              <span className="pc-micon">
-                <i className={item.icon}></i>
-              </span>
-            )}
-            <span className="pc-mtext">{item.label}</span>
-            {item.submenu && (
-              <span className="pc-arrow">
-                <FeatherIcon icon="chevron-right" />
-              </span>
-            )}
-            {item.badge && <span className="pc-badge">{item.badge}</span>}
-          </Link>
-        )}
-        {(openMenuId === item.id || hasOpenedSubMenu(item.submenu || [], openMenuId)) && (
-          <ul className={`pc-submenu open`} style={{ display: "block" }}>
-            {renderMenu(item.submenu || [])}
+    if (hasSubmenu) {
+      return (
+        <li
+          key={item.id}
+          className={`pc-item pc-hasmenu ${isOpen ? "pc-trigger active" : ""}`}
+          style={indentStyle}
+        >
+          <span
+            className="pc-link"
+            onClick={() => handleMenuClick(item.id)}
+          >
+            <span className="pc-micon">
+              <i className={item.icon}></i>
+            </span>
+            <span className="pc-mtext">{t(item.label)}</span>
+            <span className="pc-arrow">
+              <FeatherIcon icon="chevron-right" />
+            </span>
+          </span>
+          <ul
+            className={`pc-submenu ${isOpen ? "open" : ""}`}
+            style={{ display: isOpen ? "block" : "none" }}
+          >
+            {item.submenu!.map((subItem) => renderMenuItem(subItem, level + 1))}
           </ul>
-        )}
+        </li>
+      );
+    }
+
+    return (
+      <li
+        key={item.id}
+        className={`pc-item ${isActive ? "active" : ""}`}
+        style={indentStyle}
+      >
+        <Link
+          href={item.link || "#"}
+          className="pc-link"
+          data-page={item.dataPage}
+        >
+          <span className="pc-micon">
+            <i className={item.icon}></i>
+          </span>
+          <span className="pc-mtext">{t(item.label)}</span>
+          {item.badge && <span className="pc-badge">{item.badge}</span>}
+        </Link>
       </li>
-    ));
+    );
   };
 
-  return <>{renderMenu(menuItems)}</>;
+  return (
+    <React.Fragment>
+      {menuItems.map((item) => renderMenuItem(item))}
+    </React.Fragment>
+  );
 };
 
 export default NestedMenu;
