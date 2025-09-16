@@ -8,11 +8,13 @@ interface BreadcrumbItemProps {
   mainTitle: string;
   subTitle: string;
   showPageHeader?: boolean;
+  subTitle2?: string;
 }
 
 const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
   mainTitle,
   subTitle,
+  subTitle2,
   showPageHeader = true,
 }) => {
   return (
@@ -38,12 +40,17 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({
                     {subTitle}
                   </li>
                 )}
+                {subTitle2 && (
+                  <li className="breadcrumb-item" aria-current="page">
+                    {subTitle2}
+                  </li>
+                )}
               </ul>
             </Col>
             {showPageHeader && (
               <Col md={12}>
               <div className="page-header-title d-flex gap-3 align-items-center">
-                <h2 className="mb-0">{subTitle}</h2>
+                <h2 className="mb-0">{subTitle2 || subTitle}</h2>
                 {/* <UpdateIntegrationModal /> */}
               </div>
             </Col>

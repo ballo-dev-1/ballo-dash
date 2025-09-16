@@ -6,7 +6,8 @@ import navCardBg from "../assets/images/layout/nav-card-bg.svg";
 import avatar1 from "../assets/images/user/avatar-1.jpg";
 import SimpleBar from "simplebar-react";
 import { menuItems } from "./MenuData";
-import NestedMenu from "./NestedMenu";
+import { useDynamicMenu } from "@/hooks/useDynamicMenu";
+import NestedMenu from "@/Layouts/Moduler/NestedMenu";
 import { Dropdown } from "react-bootstrap";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/toolkit/hooks";
@@ -22,6 +23,17 @@ const Header = ({ themeMode }: any) => {
   const dispatch = useAppDispatch();
   const company = useAppSelector(selectCompany);
   const { data: session } = useSession();
+  const { reportsMenuItem } = useDynamicMenu();
+
+  // Create dynamic menu items by replacing the reports item with the dynamic one
+  const dynamicMenuItems = React.useMemo(() => {
+    return menuItems.map((item: any) => {
+      if (item.id === "reports") {
+        return reportsMenuItem;
+      }
+      return item;
+    });
+  }, [reportsMenuItem]);
 
   useEffect(() => {
     dispatch(fetchCompany());
@@ -105,7 +117,7 @@ const Header = ({ themeMode }: any) => {
           <SimpleBar className="navbar-content" style={{ maxHeight: "100vh" }}>
             <ul className="pc-navbar" id="pc-navbar">
               {/* Sidebar  */}
-              <NestedMenu menuItems={menuItems} />
+              <NestedMenu menuItems={dynamicMenuItems} />
             </ul>
             <div className="card nav-action-card bg-brand-color-4">
               <div

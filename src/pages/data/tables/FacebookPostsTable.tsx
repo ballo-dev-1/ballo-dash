@@ -10,6 +10,7 @@ interface Props {
   isExpanded: boolean;
   onToggleExpand: () => void;
   data: any;
+  isLoading?: boolean;
 }
 
 type FacebookRawPost = {
@@ -94,8 +95,10 @@ const FacebookPostsTable: React.FC<Props> = ({
   isExpanded,
   onToggleExpand,
   data,
+  isLoading: externalLoading = false,
 }) => {
   console.log("📘 FacebookPostsTable - Data:", data);
+  console.log("📘 FacebookPostsTable - External Loading:", externalLoading);
 
   const transformedData = Array.isArray(data?.posts)
     ? transformFacebookData(data?.posts)
@@ -105,7 +108,8 @@ const FacebookPostsTable: React.FC<Props> = ({
   
   // Check if we have valid data
   const hasData = postData.length > 0;
-  const isLoading = !data || (data && !data.posts);
+  // Use external loading state if provided, otherwise fall back to data-based logic
+  const isLoading = externalLoading || (!data || (data && !data.posts));
 
   const columns = [
     { header: "Date", enableColumnFilter: false, accessorKey: "created_time" },

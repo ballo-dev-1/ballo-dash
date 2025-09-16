@@ -10,6 +10,7 @@ interface Props {
   isExpanded: boolean;
   onToggleExpand: () => void;
   data: any;
+  isLoading?: boolean;
 }
 
 type LinkedInRawPost = {
@@ -113,7 +114,11 @@ const LinkedInPostsTable: React.FC<Props> = ({
   isExpanded,
   onToggleExpand,
   data,
+  isLoading: externalLoading = false,
 }) => {
+  console.log("🔗 LinkedInPostsTable - Data:", data);
+  console.log("🔗 LinkedInPostsTable - External Loading:", externalLoading);
+
   const transformedData = Array.isArray(data?.posts)
     ? transformLinkedInData(data?.posts)
     : [];
@@ -122,7 +127,8 @@ const LinkedInPostsTable: React.FC<Props> = ({
   
   // Check if we have valid data
   const hasData = postData.length > 0;
-  const isLoading = !data; // Only show loading if we don't have data at all
+  // Use external loading state if provided, otherwise fall back to data-based logic
+  const isLoading = externalLoading || !data;
   
   const columns = [
     { header: "Date", enableColumnFilter: false, accessorKey: "created_time" },

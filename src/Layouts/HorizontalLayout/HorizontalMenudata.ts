@@ -63,6 +63,13 @@ const horizontalData = [
         dataPage: "w_statistics"
       },
       {
+        id: "reports",
+        label: "Reports",
+        icon: "custom:/assets/images/reports-icon.png",
+        link: "/reports",
+        dataPage: "w_reports"
+      },
+      {
         id: "user",
         label: "User",
         icon: "ph-duotone ph-identification-card",

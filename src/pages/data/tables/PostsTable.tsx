@@ -10,6 +10,7 @@ interface Props {
   onToggleExpand: () => void;
   platform: "facebook" | "linkedin" | "instagram" | "x" | "tiktok";
   data: any;
+  isLoading?: boolean;
 }
 
 const PostsTable: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const PostsTable: React.FC<Props> = ({
   onToggleExpand,
   platform,
   data,
+  isLoading = false,
 }) => {
   // Render the appropriate component based on platform
   switch (platform) {
@@ -26,6 +28,7 @@ const PostsTable: React.FC<Props> = ({
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
           data={data}
+          isLoading={isLoading}
         />
       );
     
@@ -44,6 +47,7 @@ const PostsTable: React.FC<Props> = ({
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
           data={data}
+          isLoading={isLoading}
         />
       );
     
