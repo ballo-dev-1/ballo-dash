@@ -1,10 +1,11 @@
 import TableContainer from "@/Common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import xIcon from "../../../assets/images/socials/X_icon.png";
 import Image from "next/image";
 import "@/assets/scss/data-page.scss";
+import DateFilter, { DateRange } from "@/components/DateFilter";
 
 interface Props {
   isExpanded: boolean;
@@ -99,11 +100,37 @@ const XPostsTable: React.FC<Props> = ({
 }) => {
   console.log("🐦 XPostsTable - Data:", data);
 
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+
   const transformedData = Array.isArray(data?.posts)
     ? transformXData(data?.posts)
     : [];
 
-  const postData = transformedData;
+  // Filter posts based on selected date range
+  const filteredPostData = useMemo(() => {
+    if (!dateRange || transformedData.length === 0) {
+      return transformedData;
+    }
+
+    return transformedData.filter((post) => {
+      // Parse the date from the formatted string (dd/mm/yyyy hh:mm)
+      const [datePart, timePart] = post.created_time.split(' ');
+      const [day, month, year] = datePart.split('/');
+      const [hours, minutes] = timePart.split(':');
+      
+      const postDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1, // Month is 0-indexed
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
+
+      return postDate >= dateRange.startDate && postDate <= dateRange.endDate;
+    });
+  }, [transformedData, dateRange]);
+
+  const postData = filteredPostData;
   
   // Check if we have valid data
   const hasData = postData.length > 0;
@@ -220,6 +247,14 @@ const XPostsTable: React.FC<Props> = ({
               </div>
             </Card.Header>
             <Card.Body className="table-border-style">
+              {/* Date Filter */}
+              <div className="mb-3 p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <DateFilter 
+                  onDateRangeChange={setDateRange}
+                  className="date-filter-x"
+                />
+              </div>
+              
               <div className="overflow-hidden post-table">
                 {!hasData && !isLoading ? (
                   <div className="text-center py-4">
