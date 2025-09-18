@@ -735,6 +735,20 @@
         }
       }
     }
+    
+    // Remove text shadows from tooltips in ContentMetrics
+    .apexcharts-tooltip {
+      .apexcharts-tooltip-text-y-value,
+      .apexcharts-tooltip-text-y-label,
+      .apexcharts-tooltip-text-x-value,
+      .apexcharts-tooltip-series-group-text {
+        text-shadow: none !important;
+      }
+      
+      text {
+        text-shadow: none !important;
+      }
+    }
   }
 
   // Commentary Component Styling

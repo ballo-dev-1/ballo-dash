@@ -306,20 +306,13 @@ const ContentMetrics: React.FC<ContentMetricsProps> = ({
                                     }
                                 }
                             },
-                            tooltip: {
-                                theme: 'dark',
-                                style: {
-                                    fontSize: '12px'
-                                },
-                                marker: {
-                                    show: false
-                                },
-                                y: {
-                                    formatter: function (val: number) {
-                                        return val.toString()
-                                    }
-                                }
-                            }
+                                        tooltip: {
+                                            y: {
+                                                formatter: function (val: number) {
+                                                    return val.toString()
+                                                }
+                                            }
+                                        }
                         }}
                         series={[{
                             name: 'New Followers',
@@ -394,14 +387,6 @@ const ContentMetrics: React.FC<ContentMetricsProps> = ({
             show: false
         },
         tooltip: {
-            theme: 'dark',
-            style: {
-                fontSize: '12px',
-                color: '#ffffff'
-            },
-            marker: {
-                show: false
-            },
             y: {
                 formatter: function (val: number) {
                     return val.toLocaleString()
