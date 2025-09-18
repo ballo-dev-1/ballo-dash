@@ -19,7 +19,7 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ["lh3.google.com"], // ✅ Whitelist image domains
+    domains: ["lh3.google.com", "images.unsplash.com"], // ✅ Whitelist image domains
   },
 };
 
