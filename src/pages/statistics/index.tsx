@@ -1,9 +1,7 @@
 import React, { ReactElement } from "react";
 import BreadcrumbItem from "@common/BreadcrumbItem";
 import Layout from "@layout/index";
-import { Row, Col, Card, Dropdown } from "react-bootstrap";
-import Link from "next/link";
-import Image from "next/image";
+import { Row, Col, Card } from "react-bootstrap";
 import { useAppSelector } from "@/toolkit/hooks";
 import { selectCompany } from "@/toolkit/Company/reducer";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -11,9 +9,17 @@ import facebookIcon from "@/assets/images/socials/facebook.png";
 import instaIcon from "@/assets/images/socials/instagram.png";
 import linkedinIcon from "@/assets/images/socials/linkedin.png";
 import xIcon from "@/assets/images/socials/X_icon.png";
-import funnelImage from "@/assets/images/funnel.png";
 import "@/assets/scss/statistics-page.scss";
-import BarChartStackedWide from "@/views/Chart/BarChartStackedWide";
+import AudienceChart from "@/views/Chart/AudienceChart";
+import {
+    PlatformSelector,
+    StatisticsHeader,
+    FunnelOverview,
+    OverviewCards,
+    EngagementChart,
+    MetricsPanel,
+    RecentPostsTable
+} from "@/components/statistics";
 
 const StatisticsIndex = () => {
     const company = useAppSelector(selectCompany);
@@ -139,6 +145,55 @@ const StatisticsIndex = () => {
 
     const metrics = getPlatformMetrics(platform);
 
+    // Platform data structure matching reports page
+    const platformData = {
+        overview: {
+            followers: 12500,
+            engagement: 8.5,
+            reach: 45000,
+            posts: 24,
+        },
+        metrics: {
+            impressions: 125000,
+            clicks: 3200,
+            shares: 890,
+            comments: 456,
+        },
+        recentPosts: [
+            { id: 1, content: "Exciting news about our latest product launch!", engagement: 1250, date: "2024-01-15" },
+            { id: 2, content: "Behind the scenes of our team meeting", engagement: 890, date: "2024-01-14" },
+            { id: 3, content: "Customer success story", engagement: 2100, date: "2024-01-13" },
+        ],
+    };
+
+    // Chart data
+    const engagementChartOptions = {
+        chart: {
+            type: 'line' as const,
+            height: 300,
+            toolbar: { show: false }
+        },
+        colors: ['#0a1759'],
+        stroke: {
+            curve: 'smooth' as const,
+            width: 3
+        },
+        xaxis: {
+            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        },
+        yaxis: {
+            title: { text: 'Engagement Rate (%)' }
+        },
+        grid: {
+            borderColor: '#f1f1f1'
+        }
+    };
+
+    const engagementChartSeries = [{
+        name: 'Engagement Rate',
+        data: [6.2, 7.1, 8.3, 7.8, 8.9, 8.5]
+    }];
+
     // Platform icons mapping
     const getPlatformIcon = (platformKey: string) => {
         const icons = {
@@ -152,138 +207,46 @@ const StatisticsIndex = () => {
 
     return (
         <>
-					<BreadcrumbItem mainTitle="Statistics" subTitle={company?.name} showPageHeader={false} />
-					<Row className="statistics-page">
-						<Col md={3} lg={2} className="mb-3 platforms-column bg-white pt-3 rounded-3">
-							<div className="mb-2 fw-semibold text-center">Platforms</div>
-							<div className="list-group list-group-flush gap-3">
-								{(availablePlatforms || []).map(p => (
-									<a key={p.key} onClick={() => setPlatform(p.key)} className={`list-group-item list-group-item-action d-flex align-items-center px-2 py-2 border-0 bg-transparent ${platform === p.key ? "statistics-active-platform" : ""}`} role="button">
-										<Image src={p.icon} alt={p.label} style={{ objectFit: "contain", width: 20, height: 20 }} />
-										<span className="ms-2">{p.label}</span>
-									</a>
-								))}
-							</div>
-						</Col>
-						<Col md={9} lg={10}>
-							<Card className="mb-3">
-								<Card.Body className="d-flex align-items-center justify-content-between controls-row">
-									<div className="d-flex align-items-center border rounded-3 control-group">
-										<button className="btn btn-sm me-2">Previous Month: 1 Feb, 2025 - 28 Feb, 2025</button>
-										<button className="btn btn-sm">▼</button>
-									</div>
-									<Dropdown className="border rounded-3 control-group">
-										<Dropdown.Toggle as="button" className="btn btn-sm">
-											Export
-										</Dropdown.Toggle>
-										<Dropdown.Menu>
-											<Dropdown.Item onClick={handleExportPDF}>
-												<i className="feather-file-text me-2"></i>
-												Export as PDF
-											</Dropdown.Item>
-										</Dropdown.Menu>
-									</Dropdown>
-								</Card.Body>
+            <BreadcrumbItem mainTitle="Statistics" subTitle={company?.name} showPageHeader={false} />
+            <Row className="statistics-page">
+                <PlatformSelector
+                    platforms={availablePlatforms}
+                    selectedPlatform={platform}
+                    onPlatformSelect={setPlatform}
+                />
+                <Col md={9} lg={10}>
+                    <Card className="mb-3">
+                        <StatisticsHeader onExportPDF={handleExportPDF} />
+                        
+                        <FunnelOverview
+                            platform={platform}
+                            platformIcon={getPlatformIcon(platform)}
+                            metrics={metrics}
+                        />
 
-								<Card.Body>
-									<h4 className="mb-3 card-title-overview d-flex align-items-center">
-										Overview 
-										<Image 
-											src={getPlatformIcon(platform)} 
-											alt={platform} 
-											width={24} 
-											height={24} 
-											className="ms-2"
-											style={{ objectFit: "contain" }}
-										/>
-									</h4>
-									<Row className="align-items-center">
-										{/* Left Panel - Budget and Spend Metrics */}
-										<Col md={2}>
-											<div className="metrics-left-panel">
-												<div className="metric-item mb-3">
-													<div className="metric-label text-muted small">Ad Budget</div>
-													<div className="metric-value fw-bold">K{metrics.budget.toLocaleString()}</div>
-												</div>
-												<div className="metric-item mb-3">
-													<div className="metric-label text-muted small">Ad Spend</div>
-													<div className="metric-value fw-bold">K{metrics.spend.toLocaleString()}</div>
-												</div>
-												<div className="metric-item mb-3">
-													<div className="metric-label text-muted small">Paid Reach</div>
-													<div className="metric-value fw-bold">K{metrics.paidReach.toLocaleString()}</div>
-												</div>
-												<div className="metric-item">
-													<div className="metric-label text-muted small">Paid Engagement</div>
-													<div className="metric-value fw-bold">K{metrics.paidEngagement.toLocaleString()}</div>
-												</div>
-											</div>
-										</Col>
-										
-										{/* Right Panel - Funnel with Metrics */}
-										<Col md={8}>
-											<div className="funnel-container position-relative">
-												<Image 
-													src={funnelImage} 
-													alt="Funnel and KPIs" 
-													className="img-fluid"
-													style={{ maxWidth: '100%', height: 'auto' }}
-												/>
-												
-												{/* Funnel Metrics Overlay */}
-												<div className="funnel-metrics">
-													{/* REACH */}
-													<div className="funnel-metric reach-metric">
-														<div className="metric-content">
-															<div className="metric-label">REACH</div>
-															<div className="metric-value">{metrics.reach.toLocaleString()}</div>
-															<div className={`metric-change ${metrics.reachChange < 0 ? 'text-danger' : 'text-success'}`}>
-																{metrics.reachChange > 0 ? '+' : ''}{metrics.reachChange}%
-															</div>
-														</div>
-													</div>
-													
-													{/* ENGAGEMENT */}
-													<div className="funnel-metric engagement-metric">
-														<div className="metric-content">
-															<div className="metric-label">ENGAGEMENT</div>
-															<div className="metric-value">{metrics.engagement.toLocaleString()}</div>
-															<div className={`metric-change ${metrics.engagementChange < 0 ? 'text-danger' : 'text-success'}`}>
-																{metrics.engagementChange > 0 ? '+' : ''}{metrics.engagementChange}%
-															</div>
-														</div>
-													</div>
-													
-													{/* CTR */}
-													<div className="funnel-metric ctr-metric">
-														<div className="metric-content">
-															<div className="metric-label">CTR</div>
-															<div className="metric-value">{metrics.ctr}%</div>
-														</div>
-													</div>
-													
-													{/* MESSAGES */}
-													<div className="funnel-metric messages-metric">
-														<div className="metric-content">
-															<div className="metric-label">COMMENTS</div>
-															<div className="metric-value">{metrics.comments.toLocaleString()}</div>
-														</div>
-													</div>
-												</div>
-											</div>
-										</Col>
-									</Row>
-								</Card.Body>
+                        <Card.Body>
+                            <OverviewCards data={platformData.overview} />
 
-								<Card.Body className="p-0">
-									<div className="audience-chart-container">
-										<BarChartStackedWide platform={platform} />
-									</div>
-								</Card.Body>
-							</Card>
-							
-						</Col>
-					</Row>
+                            {/* Charts Section */}
+                            <Row className="mb-4">
+                                <EngagementChart
+                                    options={engagementChartOptions}
+                                    series={engagementChartSeries}
+                                />
+                                <MetricsPanel data={platformData.metrics} />
+                            </Row>
+
+                            <RecentPostsTable posts={platformData.recentPosts} />
+                        </Card.Body>
+
+                        <Card.Body className="p-0">
+                            <div className="audience-chart-container">
+                                <AudienceChart platform={platform} />
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
         </>
     );
 };

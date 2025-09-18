@@ -26,12 +26,9 @@
   // Card hover effects
   .card {
     transition: all 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
-    }
+    border-radius: 0;
+    margin-bottom: 0;
+    border: 0;
   }
 
   // Overview cards specific styling
@@ -117,7 +114,7 @@
     
     .metric-label {
       font-size: 0.875rem;
-      color: #6c757d;
+      color: white;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -365,6 +362,504 @@
     }
     50% {
       box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+  }
+
+  .report-header-bg {
+    position: relative;
+    background-position: center;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+
+    }
+  }
+
+  // Funnel Overview Styling (from statistics page)
+  .funnel-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .metrics-left-panel {
+    .metric-item {
+      .metric-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+        color: white;
+      }
+      .metric-value {
+        font-size: 1.25rem;
+        color: white;
+      }
+    }
+  }
+
+  .funnel-metrics {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .funnel-metric {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    
+    .metric-line {
+      width: 40px;
+      height: 1px;
+      background-color: #6c757d;
+      margin-right: 10px;
+    }
+    
+    .metric-content {
+      .metric-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 2px;
+      }
+      
+      .metric-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 2px;
+      }
+      
+      .metric-change {
+        font-size: 0.75rem;
+        font-weight: 600;
+        
+        &.positive {
+          color: #28a745;
+        }
+        
+        &.negative {
+          color: #dc3545;
+        }
+        
+      }
+    }
+  }
+
+  // Position each metric around the funnel
+  .reach-metric {
+    top: 0;
+    right: 5%;
+  }
+
+  .engagement-metric {
+    top: 30%;
+    right: -2%;
+  }
+
+  .ctr-metric {
+    top: 55%;
+    right: 5%;
+  }
+
+  .messages-metric {
+    top: 78%;
+    right: 2%;
+  }
+
+  // Override Bootstrap's text-white utility class for metric changes
+  .text-white .funnel-metric .metric-content .metric-change {
+    &.positive {
+      color: #28a745 !important;
+    }
+    
+    &.negative {
+      color: #dc3545 !important;
+    }
+    
+    &.text-success {
+      color: #28a745 !important;
+    }
+    
+    &.text-danger {
+      color: #dc3545 !important;
+    }
+  }
+
+  // Audience Component Styling
+  .audience-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .audience-header {
+      margin: -1px -1px 0 -1px; // Extend to card edges
+      
+      h2 {
+        font-size: 1.5rem;
+        letter-spacing: 0.5px;
+      }
+    }
+    
+    .card-body {
+      background-color: #f8f9fa;
+      
+      .apexcharts-canvas {
+        .apexcharts-bar-series {
+          .apexcharts-series {
+            .apexcharts-bar-area {
+              rx: 2;
+            }
+          }
+        }
+        
+        // Style ApexCharts pie labels
+        .apexcharts-text.apexcharts-pie-label {
+          fill: black !important;
+        }
+      }
+      
+      // Custom legend styling
+      .d-flex.align-items-center.gap-4 {
+        margin-left: 20px;
+        
+        .d-flex.align-items-center.gap-2 {
+          .fw-medium {
+            font-size: 14px;
+            color: #333;
+          }
+        }
+      }
+    }
+  }
+
+  // Leads Sentiments Component Styling
+  .leads-sentiments-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .leads-sentiments-header {
+      margin: -1px -1px 0 -1px; // Extend to card edges
+      
+      h2 {
+        font-size: 1.5rem;
+        letter-spacing: 0.5px;
+      }
+    }
+    
+    .card-body {
+      .apexcharts-canvas {
+        // Style ApexCharts pie labels
+        .apexcharts-text.apexcharts-pie-label {
+          fill: black !important;
+          stroke: white !important;
+          stroke-width: 2px !important;
+          paint-order: stroke fill !important;
+        }
+      }
+    }
+  }
+
+  // Global ApexCharts tooltip text styling with white text shadow
+  .apexcharts-tooltip {
+    .apexcharts-tooltip-text-y-value,
+    .apexcharts-tooltip-text-y-label,
+    .apexcharts-tooltip-text-x-value,
+    .apexcharts-tooltip-series-group-text {
+      fill: black !important;
+      color: black !important;
+      text-shadow: 
+        1px 1px 0 white,
+        -1px -1px 0 white,
+        1px -1px 0 white,
+        -1px 1px 0 white,
+        0 1px 0 white,
+        0 -1px 0 white,
+        1px 0 0 white,
+        -1px 0 0 white !important;
+    }
+    
+    // Also style any general tooltip text
+    text {
+      fill: black !important;
+      color: black !important;
+      text-shadow: 
+        1px 1px 0 white,
+        -1px -1px 0 white,
+        1px -1px 0 white,
+        -1px 1px 0 white,
+        0 1px 0 white,
+        0 -1px 0 white,
+        1px 0 0 white,
+        -1px 0 0 white !important;
+    }
+    
+    // Style the tooltip container for better visibility
+    &.apexcharts-theme-dark,
+    &.apexcharts-theme-light {
+      .apexcharts-tooltip-title,
+      .apexcharts-tooltip-series-group {
+        color: black !important;
+        text-shadow: 
+          1px 1px 0 white,
+          -1px -1px 0 white,
+          1px -1px 0 white,
+          -1px 1px 0 white,
+          0 1px 0 white,
+          0 -1px 0 white,
+          1px 0 0 white,
+          -1px 0 0 white !important;
+      }
+    }
+  }
+
+  // Queries Component Styling
+  .queries-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      h2, th, td, span, li {
+        text-shadow: 
+          1px 1px 2px rgba(0, 0, 0, 0.8),
+          0 0 4px rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      // Table styling
+      .table {
+        th {
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-weight: 700;
+        }
+        
+        td {
+          .list-unstyled li {
+            transition: all 0.2s ease;
+            
+            &:hover {
+              transform: translateX(5px);
+              color: #f8f9fa;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Comments Component Styling
+  .comments-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      h2, h4, p, span, li {
+        text-shadow: 
+          1px 1px 2px rgba(0, 0, 0, 0.8),
+          0 0 4px rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      .comments-content {
+        p {
+          margin-bottom: 1.5rem;
+          
+          em {
+            font-style: italic;
+            color: #f8f9fa;
+          }
+          
+          strong {
+            font-weight: 700;
+            color: #ffffff;
+          }
+        }
+        
+        ul.list-unstyled {
+          li {
+            transition: all 0.2s ease;
+            
+            &:hover {
+              transform: translateX(5px);
+              color: #f8f9fa;
+            }
+            
+            span {
+              &:first-child {
+                flex-shrink: 0;
+              }
+            }
+          }
+        }
+        
+        h4 {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+          padding-bottom: 0.5rem;
+          margin-bottom: 1rem;
+        }
+      }
+    }
+  }
+
+  // Content Metrics Component Styling
+  .content-metrics-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      h2, h3, th, td, span {
+        text-shadow: 
+          1px 1px 2px rgba(0, 0, 0, 0.8),
+          0 0 4px rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      // Table styling
+      .table {
+        th {
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          font-weight: 700;
+        }
+        
+        td {
+          font-weight: 500;
+          
+          .fw-bold {
+            font-weight: 700;
+          }
+        }
+      }
+    }
+  }
+
+  // Commentary Component Styling
+  .commentary-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      h2, h4, h5, h6, p, span, li {
+        text-shadow: 
+          1px 1px 2px rgba(0, 0, 0, 0.8),
+          0 0 4px rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      h4, h5, h6 {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      ul.list-unstyled {
+        li {
+          transition: all 0.2s ease;
+          
+          &:hover {
+            transform: translateX(5px);
+            color: #f8f9fa;
+          }
+          
+          span {
+            &:first-child {
+              flex-shrink: 0;
+            }
+          }
+          
+          strong {
+            color: #ffffff;
+            font-weight: 700;
+          }
+        }
+      }
+      
+      p {
+        margin-bottom: 1.5rem;
+        
+        strong {
+          font-weight: 700;
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .commentary-card {
+    border-top: 1px solid white;
+  }
+
+  // Recommendations Component Styling
+  .recommendations-card {
+    border-top: 1px solid white;
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      h2, h4, h5, h6, p, span, li {
+        text-shadow: 
+          1px 1px 2px rgba(0, 0, 0, 0.8),
+          0 0 4px rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      h4 {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      
+      .recommendations-content {
+        ul.list-unstyled {
+          li {
+            transition: all 0.2s ease;
+            
+            &:hover {
+              transform: translateX(5px);
+              color: #f8f9fa;
+            }
+            
+            span {
+              &:first-child {
+                flex-shrink: 0;
+              }
+            }
+          }
+        }
+        
+        p {
+          margin-bottom: 1.5rem;
+        }
+      }
+    }
+  }
+
+  // Thank You Component Styling
+  .thank-you-card {
+    border-radius: 0;
+    overflow: hidden;
+    
+    .card-body {
+      padding: 0 !important;
+      
+      h1 {
+        text-shadow: 
+          2px 2px 4px rgba(0, 0, 0, 0.8),
+          0 0 8px rgba(255, 255, 255, 0.2) !important;
+        
+        &.text-white {
+          color: #ffffff !important;
+        }
+      }
+      
+      // Blue accent styling
+      .position-absolute {
+        &:last-of-type {
+          background: linear-gradient(180deg, #03a2e9 0%, #0288d1 100%);
+        }
+      }
     }
   }
 }
