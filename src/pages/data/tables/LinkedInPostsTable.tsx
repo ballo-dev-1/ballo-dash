@@ -29,6 +29,9 @@ type LinkedInRawPost = {
   comments: number;
   shares: number;
   views: number;
+  clicks: number;
+  uniqueImpressions: number;
+  engagement: number;
 };
 
 type LinkedInTransformedPost = {
@@ -45,6 +48,9 @@ type LinkedInTransformedPost = {
   media_url?: string;
   permalink?: string;
   views: number | string;
+  clicks: number | string;
+  uniqueImpressions: number | string;
+  engagementRate: number | string;
 };
 
 function transformLinkedInData(data: LinkedInRawPost[]): LinkedInTransformedPost[] {
@@ -64,21 +70,23 @@ function transformLinkedInData(data: LinkedInRawPost[]): LinkedInTransformedPost
 
       const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
 
-      // LinkedIn metrics (these would need separate API calls for real data)
-      const post_reach = post.views || "-";
+      // LinkedIn metrics from insights API
+      const post_reach = post.uniqueImpressions || post.views || "-";
       const comments = post.comments || 0;
       const likes = post.likes || 0;
       const shares = post.shares || 0;
+      const clicks = post.clicks || 0;
+      const uniqueImpressions = post.uniqueImpressions || 0;
+      
+      // Calculate engagement rate as percentage
+      const engagementRate = uniqueImpressions > 0 
+        ? ((likes + comments + shares) / uniqueImpressions * 100).toFixed(2) + '%'
+        : '0%';
 
       const engagement = likes + comments + shares;
 
-      const reactions = [
-        likes ? `👍${likes}` : null,
-        comments ? `💬${comments}` : null,
-        shares ? `🔄${shares}` : null,
-      ]
-        .filter(Boolean)
-        .join(", ");
+      // Reactions will be handled in the cell renderer
+      const reactions = "";
 
       // Determine media type based on content
       let mediaType = post.media_type || "TEXT";
@@ -104,6 +112,9 @@ function transformLinkedInData(data: LinkedInRawPost[]): LinkedInTransformedPost
         shares,
         likes,
         views: post.views || 0,
+        clicks,
+        uniqueImpressions,
+        engagementRate,
         media_type: mediaType,
         media_url: post.media_url,
         permalink: post.permalink,
@@ -170,17 +181,27 @@ const LinkedInPostsTable: React.FC<Props> = ({
       accessorKey: "media_type",
     },
     {
-      header: "Views",
+      header: "Impressions",
       enableColumnFilter: false,
       accessorKey: "views",
     },
     {
-      header: "Reach",
+      header: "Unique Reach",
       enableColumnFilter: false,
-      accessorKey: "post_reach",
+      accessorKey: "uniqueImpressions",
     },
     {
-      header: "Engagement",
+      header: "Clicks",
+      enableColumnFilter: false,
+      accessorKey: "clicks",
+    },
+    {
+      header: "Engagement Rate",
+      enableColumnFilter: false,
+      accessorKey: "engagementRate",
+    },
+    {
+      header: "Total Engagement",
       enableColumnFilter: false,
       accessorKey: "engagement",
     },
@@ -188,11 +209,75 @@ const LinkedInPostsTable: React.FC<Props> = ({
       header: "Reactions",
       enableColumnFilter: false,
       accessorKey: "reactions",
+      cell: ({ row }: any) => {
+        const post = row.original;
+        const likes = post.likes || 0;
+        const comments = post.comments || 0;
+        const shares = post.shares || 0;
+        
+        return (
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+            {likes > 0 && (
+              <span style={{
+                backgroundColor: 'lightgoldenrodyellow',
+                color: 'black',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                👍 {likes}
+              </span>
+            )}
+            {comments > 0 && (
+              <span style={{
+                backgroundColor: '#e3f2fd',
+                color: '#1565c0',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                💬 {comments}
+              </span>
+            )}
+            {shares > 0 && (
+              <span style={{
+                backgroundColor: '#f3e5f5',
+                color: '#7b1fa2',
+                padding: '2px 6px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '2px'
+              }}>
+                🔄 {shares}
+              </span>
+            )}
+            {likes === 0 && comments === 0 && shares === 0 && (
+              <span style={{ color: '#999', fontSize: '12px' }}>-</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "Comments",
       enableColumnFilter: false,
       accessorKey: "comments",
+    },
+    {
+      header: "Shares",
+      enableColumnFilter: false,
+      accessorKey: "shares",
     },
   ];
 

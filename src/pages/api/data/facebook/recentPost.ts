@@ -30,11 +30,11 @@ export default async function handler(
     }
 
     // Fetch Facebook access token directly from database
-    console.log("Fetching Facebook access token from database for recent post...");
-    console.log("   User Email:", session.user.email);
-    console.log("   Company ID:", companyId);
-    console.log("   Platform:", platform);
-    console.log("   Page ID:", pageId);
+    // console.log("Fetching Facebook access token from database for recent post...");
+    // console.log("   User Email:", session.user.email);
+    // console.log("   Company ID:", companyId);
+    // console.log("   Platform:", platform);
+    // console.log("   Page ID:", pageId);
     
     const accessToken = await getFacebookAccessToken(companyId);
     
@@ -42,7 +42,7 @@ export default async function handler(
       return res.status(400).json({ error: "Facebook access token not found in database" });
     }
 
-    console.log("✅ Retrieved Facebook access token from database for recent post, company:", companyId);
+    // console.log("✅ Retrieved Facebook access token from database for recent post, company:", companyId);
 
     const recentPostRes = await fetch(
       `https://graph.${platform}.com/v23.0/${pageId}/posts?limit=1&access_token=${accessToken}`

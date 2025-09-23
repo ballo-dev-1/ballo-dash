@@ -28,7 +28,7 @@ export default async function handler(
       return res.status(400).json({ error: "Instagram access token not found in database" });
     }
 
-    console.log("✅ Retrieved Instagram access token from database for posts, company:", companyId);
+    // console.log("✅ Retrieved Instagram access token from database for posts, company:", companyId);
 
     // Get the stored account ID if not provided
     const storedAccountId = await getStoredInstagramAccountId(companyId);
@@ -41,7 +41,7 @@ export default async function handler(
     // Get Instagram username if not provided
     let finalUsername = username as string;
     if (!finalUsername) {
-      console.log("🔍 Username not provided, fetching from Instagram API...");
+      // console.log("🔍 Username not provided, fetching from Instagram API...");
       const fetchedUsername = await getInstagramUsername(finalAccountId, accessToken);
       if (!fetchedUsername) {
         return res.status(400).json({ error: "Instagram username not found" });
@@ -49,7 +49,7 @@ export default async function handler(
       finalUsername = fetchedUsername;
     }
 
-    console.log(`📸 Fetching Instagram posts for account: ${finalAccountId}, username: ${finalUsername}`);
+    // console.log(`📸 Fetching Instagram posts for account: ${finalAccountId}, username: ${finalUsername}`);
 
     // Use business discovery API to fetch posts
     const postsRes = await fetch(
@@ -99,7 +99,7 @@ export default async function handler(
               return acc;
             }, {});
             
-            console.log(`📊 Fetched insights for post ${post.id}:`, insights);
+            // console.log(`📊 Fetched insights for post ${post.id}:`, insights);
           } else {
             console.log(`⚠️ Failed to fetch insights for post ${post.id}`);
           }

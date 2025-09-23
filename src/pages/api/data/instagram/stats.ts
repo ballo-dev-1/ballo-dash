@@ -42,33 +42,33 @@ export default async function handler(
     let accountId = await getStoredInstagramAccountId(companyId);
     
     if (!accountId) {
-      console.log("❌ No stored account ID found in database");
-      console.log("🔄 Attempting to fetch from Instagram API...");
+      // console.log("❌ No stored account ID found in database");
+      // console.log("🔄 Attempting to fetch from Instagram API...");
       
       accountId = await getInstagramAccountId(accessToken);
       
       if (accountId) {
-        console.log(`✅ Successfully fetched account ID from API: ${accountId}`);
-        console.log(`💾 Storing account ID in database...`);
+        // console.log(`✅ Successfully fetched account ID from API: ${accountId}`);
+        // console.log(`💾 Storing account ID in database...`);
         
         try {
           await storeInstagramAccountId(companyId, accountId);
-          console.log(`✅ Account ID stored successfully in database`);
+          // console.log(`✅ Account ID stored successfully in database`);
         } catch (storeError) {
-          console.log(`⚠️ Warning: Failed to store account ID:`, storeError);
+          // console.log(`⚠️ Warning: Failed to store account ID:`, storeError);
         }
       } else {
-        console.log("❌ Failed to fetch account ID from Instagram API");
+        // console.log("❌ Failed to fetch account ID from Instagram API");
       }
     } else {
-      console.log(`✅ Found stored account ID in database: ${accountId}`);
+      // console.log(`✅ Found stored account ID in database: ${accountId}`);
     }
     
-    console.log(`Final Account ID: ${accountId || 'NULL'}`);
+    // console.log(`Final Account ID: ${accountId || 'NULL'}`);
     console.log("========================================");
     
     if (!accountId) {
-      console.log("❌ Instagram account not found - returning 404");
+      // console.log("❌ Instagram account not found - returning 404");
       return res.status(404).json({ error: "Instagram account not found" });
     }
 
@@ -99,12 +99,12 @@ export default async function handler(
       recentPostResponse.json()
     ]);
 
-    console.log("📸 Instagram Profile Data:", {
-      username: profileData.username,
-      biography: profileData.biography,
-      id: profileData.id,
-      followers_count: profileData.followers_count
-    });
+    // console.log("📸 Instagram Profile Data:", {
+    //   username: profileData.username,
+    //   biography: profileData.biography,
+    //   id: profileData.id,
+    //   followers_count: profileData.followers_count
+    // });
 
     // Prepare raw data for transformation
     const rawData = {
@@ -143,7 +143,7 @@ export default async function handler(
     const transformedData = DataTransformationService.getInstance().transformInstagramData(rawData);
     
     if (!transformedData) {
-      console.log("❌ Failed to transform Instagram data using DataTransformationService");
+      // console.log("❌ Failed to transform Instagram data using DataTransformationService");
       return res.status(500).json({ error: "Failed to transform Instagram data" });
     }
 

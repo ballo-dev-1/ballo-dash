@@ -36,11 +36,11 @@ export default async function handler(
       return res.status(400).json({ error: "Instagram access token not found in database" });
     }
 
-    console.log("✅ Retrieved Instagram access token from database for business posts, company:", companyId);
+    // console.log("✅ Retrieved Instagram access token from database for business posts, company:", companyId);
 
     // Get the stored account ID if not provided
     const AccountId = await getStoredInstagramAccountId(companyId);
-    console.log("🎒 Instagram account ID:", AccountId);
+    // console.log("🎒 Instagram account ID:", AccountId);
 
     if (!AccountId) {
       return res.status(400).json({ error: "Instagram account ID not found" });
@@ -51,7 +51,7 @@ export default async function handler(
     // Use the business_discovery API to fetch posts
     const businessDiscoveryUrl = `https://graph.facebook.com/v19.0/${AccountId}?fields=business_discovery.username(${username}){media{caption,id,media_type,media_url,timestamp,like_count,comments_count}}&access_token=${accessToken}`;
     
-    console.log("🔍 Fetching Instagram business posts from:", businessDiscoveryUrl);
+    // console.log("🔍 Fetching Instagram business posts from:", businessDiscoveryUrl);
 
     const postsRes = await fetch(businessDiscoveryUrl, {
       headers: {
@@ -69,7 +69,7 @@ export default async function handler(
       });
     }
 
-    console.log("✅ Instagram business posts API response:", postsJson);
+    // console.log("✅ Instagram business posts API response:", postsJson);
 
     // Extract posts from business_discovery response
     const businessDiscovery = postsJson.business_discovery;

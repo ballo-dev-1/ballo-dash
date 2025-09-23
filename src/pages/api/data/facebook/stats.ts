@@ -39,8 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Facebook access token not found in database" });
     }
 
-    console.log("✅ Retrieved Facebook access token from database for stats, company:", companyId);
-    console.log("   Token preview:", accessToken.substring(0, 20) + "...");
+    // console.log("✅ Retrieved Facebook access token from database for stats, company:", companyId);
+    // console.log("   Token preview:", accessToken.substring(0, 20) + "...");
 
     const cacheKey = `facebookStats:${pageId}:${since || " "}:${until || " "}:${
       datePreset || " "
