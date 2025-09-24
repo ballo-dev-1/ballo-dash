@@ -4,6 +4,7 @@ import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { useSelector } from "react-redux";
 import Image from "next/image";
+import AccountsDateFilter, { AccountsDateRange } from "@/components/AccountsDateFilter";
 import facebookIcon from "@/assets/images/socials/facebook.png";
 import linkedinIcon from "@/assets/images/socials/linkedin.png";
 import instaIcon from "@/assets/images/socials/instagram.png";
@@ -104,6 +105,8 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   onToggleExpand,
 }) => {
 
+  // Date range state
+  const [dateRange, setDateRange] = useState<AccountsDateRange | undefined>(undefined);
 
   // Get progressive data from Redux
   const progressiveData = useSelector(selectProgressiveFacebookStats);
@@ -314,6 +317,11 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
             </div>
           </Card.Header>
           <Card.Body className="table-border-style">
+            {/* Date Range Filter */}
+            <div className="mb-3">
+              <AccountsDateFilter onDateRangeChange={setDateRange} />
+            </div>
+            
             <div id="pc-dt-fetchapi">
               <TableContainer
                 columns={columns || []}
