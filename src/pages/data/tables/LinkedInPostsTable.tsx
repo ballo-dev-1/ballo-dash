@@ -54,7 +54,7 @@ type LinkedInTransformedPost = {
 };
 
 function transformLinkedInData(data: LinkedInRawPost[]): LinkedInTransformedPost[] {
-  console.log('🔗🔗🔗transformLinkedInData', data);
+  // console.log('🔗🔗🔗transformLinkedInData', data);
   return data
     .filter(
       (post): post is LinkedInRawPost & { message: string; created_time: string } =>
@@ -98,13 +98,50 @@ function transformLinkedInData(data: LinkedInRawPost[]): LinkedInTransformedPost
         }
       }
 
+      // Clean up the message by unescaping LinkedIn's escaped characters and removing asterisk wrapping
+      const cleanMessage = post.message
+        .replace(/\\\|/g, '|')
+        .replace(/\\\(/g, '(')
+        .replace(/\\\)/g, ')')
+        .replace(/\\@/g, '@')
+        .replace(/\\_/g, '_')
+        .replace(/\\#/g, '#')
+        .replace(/\\*/g, '*')
+        .replace(/\\`/g, '`')
+        .replace(/\\\[/g, '[')
+        .replace(/\\\]/g, ']')
+        .replace(/\\{/g, '{')
+        .replace(/\\}/g, '}')
+        // Remove LinkedIn's asterisk character wrapping (e.g., *W*e*'*r*e* becomes We're)
+        .replace(/\*([^*])\*/g, '$1')
+        // Clean up any remaining asterisks that might be standalone
+        .replace(/\*+/g, '')
+        // Format LinkedIn mentions: @[Jonah Hachunde](urn:li:person:c-cEV5aPqp) -> @Jonah Hachunde
+        .replace(/@\[([^\]]+)\]\(urn:li:person:[^)]+\)/g, '@$1')
+        // Format LinkedIn organization mentions: @[Ballo Innovations](urn:li:organization:90362182) -> @Ballo Innovations
+        .replace(/@\[([^\]]+)\]\(urn:li:organization:[^)]+\)/g, '@$1')
+        // Clean up multiple spaces that might result from asterisk removal
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Smart truncation - find the last complete word within the limit
+      const truncateMessage = (text: string, maxLength: number) => {
+        if (text.length <= maxLength) return text;
+        
+        // Find the last space before the limit to avoid cutting words
+        const truncated = text.slice(0, maxLength);
+        const lastSpaceIndex = truncated.lastIndexOf(' ');
+        
+        // If we can't find a space, just cut at the limit
+        const cutIndex = lastSpaceIndex > maxLength * 0.8 ? lastSpaceIndex : maxLength;
+        
+        return text.slice(0, cutIndex).trim() + '...';
+      };
+
       return {
         created_time: formattedDate,
-        message: post.message,
-        truncatedMessage:
-          post.message.length > 100
-            ? post.message.slice(0, 100) + "..."
-            : post.message,
+        message: cleanMessage,
+        truncatedMessage: truncateMessage(cleanMessage, 120),
         post_reach,
         engagement,
         comments,
@@ -128,8 +165,8 @@ const LinkedInPostsTable: React.FC<Props> = ({
   data,
   isLoading: externalLoading = false,
 }) => {
-  console.log("🔗 LinkedInPostsTable - Data:", data);
-  console.log("🔗 LinkedInPostsTable - External Loading:", externalLoading);
+  // console.log("🔗 LinkedInPostsTable - Data:", data);
+  // console.log("🔗 LinkedInPostsTable - External Loading:", externalLoading);
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
