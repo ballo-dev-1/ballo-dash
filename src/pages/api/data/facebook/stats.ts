@@ -66,23 +66,140 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       "page_fan_removes",
     ];
 
+    // Calculate quarter dates
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const threeMonthsAgo = new Date(now.getTime() - (93 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const sixMonthsAgo = new Date(now.getTime() - (186 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const nineMonthsAgo = new Date(now.getTime() - (279 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+    const twelveMonthsAgo = new Date(now.getTime() - (372 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+    // Additional metrics for different quarters
+    const quarterMetrics = [
+      // Page Post Engagements
+      {
+        metric: "page_post_engagements",
+        name: "page_post_engagements_this_quarter",
+        since: threeMonthsAgo,
+        until: today,
+        period: "day"
+      },
+      {
+        metric: "page_post_engagements",
+        name: "page_post_engagements_last_quarter", 
+        since: sixMonthsAgo,
+        until: threeMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_post_engagements",
+        name: "page_post_engagements_three_quarters_back",
+        since: nineMonthsAgo,
+        until: sixMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_post_engagements",
+        name: "page_post_engagements_four_quarters_back",
+        since: twelveMonthsAgo,
+        until: nineMonthsAgo,
+        period: "day"
+      },
+      // Page Posts Impressions
+      {
+        metric: "page_posts_impressions",
+        name: "page_posts_impressions_this_quarter",
+        since: threeMonthsAgo,
+        until: today,
+        period: "day"
+      },
+      {
+        metric: "page_posts_impressions",
+        name: "page_posts_impressions_last_quarter", 
+        since: sixMonthsAgo,
+        until: threeMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_posts_impressions",
+        name: "page_posts_impressions_three_quarters_back",
+        since: nineMonthsAgo,
+        until: sixMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_posts_impressions",
+        name: "page_posts_impressions_four_quarters_back",
+        since: twelveMonthsAgo,
+        until: nineMonthsAgo,
+        period: "day"
+      },
+      // Page Impressions
+      {
+        metric: "page_impressions",
+        name: "page_impressions_this_quarter",
+        since: threeMonthsAgo,
+        until: today,
+        period: "day"
+      },
+      {
+        metric: "page_impressions",
+        name: "page_impressions_last_quarter", 
+        since: sixMonthsAgo,
+        until: threeMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_impressions",
+        name: "page_impressions_three_quarters_back",
+        since: nineMonthsAgo,
+        until: sixMonthsAgo,
+        period: "day"
+      },
+      {
+        metric: "page_impressions",
+        name: "page_impressions_four_quarters_back",
+        since: twelveMonthsAgo,
+        until: nineMonthsAgo,
+        period: "day"
+      }
+    ];
+
     const timeParams = new URLSearchParams();
     if (since) timeParams.append("since=", since.toString());
     if (until) timeParams.append("until=", until.toString());
     if (datePreset) timeParams.append("datePreset", datePreset.toString());
-    const results = await Promise.allSettled(
+
+    // Fetch regular metrics
+    const regularResults = await Promise.allSettled(
       metricList.map((metric) => {
         const url = `https://graph.${platform}.com/v23.0/${pageId}/insights?metric=${metric}&datePreset=${datePreset}&access_token=${accessToken}&${timeParams.toString()}`;
         return fetch(url).then((res) => res.json());
       })
     );
 
+    // Fetch additional quarter metrics
+    const quarterResults = await Promise.allSettled(
+      quarterMetrics.map((metric) => {
+        const url = `https://graph.${platform}.com/v23.0/${pageId}/insights?metric=${metric.metric}&since=${metric.since}&until=${metric.until}&period=${metric.period}&access_token=${accessToken}`;
+        return fetch(url).then((res) => res.json()).then(data => ({
+          ...data,
+          metricName: metric.name,
+          baseMetric: metric.metric
+        }));
+      })
+    );
+
+    // Combine all results
+    const allResults = [...regularResults, ...quarterResults];
+
     const structuredData: Record<
       string,
       Record<string, { values: any[]; title: string; description: string }>
     > = {};
 
-    results.forEach((result, index) => {
+    // Process regular metrics
+    regularResults.forEach((result, index) => {
       if (result.status === "fulfilled" && result.value?.data) {
         result.value.data.forEach((metric: any) => {
           const { name, period, values, title, description } = metric;
@@ -102,6 +219,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         const failedMetric = metricList[index];
         console.warn(`Failed to fetch ${failedMetric}:`, result);
+      }
+    });
+
+    // Process quarter metrics
+    quarterResults.forEach((result, index) => {
+      if (result.status === "fulfilled" && result.value?.data) {
+        const metricName = result.value.metricName;
+        const baseMetric = result.value.baseMetric;
+        result.value.data.forEach((metric: any) => {
+          const { period, values, title, description } = metric;
+          if (!structuredData[metricName]) structuredData[metricName] = {};
+          const formattedValues = values.map((v: any) => ({
+            value: v.value,
+            endTime: v.end_time
+              ? new Date(v.end_time).toISOString().split("T")[0]
+              : null,
+          }));
+          
+          // Generate appropriate title and description based on the base metric
+          let displayTitle = title;
+          let displayDescription = description;
+          
+          if (!title) {
+            const quarterName = metricName.replace(`${baseMetric}_`, '').replace('_', ' ');
+            displayTitle = `${baseMetric.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())} - ${quarterName}`;
+          }
+          
+          if (!description) {
+            const quarterName = metricName.replace(`${baseMetric}_`, '').replace('_', ' ');
+            displayDescription = `${baseMetric.replace('_', ' ')} data for ${quarterName}`;
+          }
+          
+          structuredData[metricName][period] = {
+            values: formattedValues,
+            title: displayTitle,
+            description: displayDescription,
+          };
+        });
+      } else {
+        const failedMetric = quarterMetrics[index];
+        console.warn(`Failed to fetch ${failedMetric.name}:`, result);
       }
     });
 
