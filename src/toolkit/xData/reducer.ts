@@ -1,9 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState, AppDispatch } from "..";
 import { fetchIntegrations } from "../Integrations/reducer";
+import type { XStatsResponse } from "@/types/x";
 
 // --- Interfaces ---
-interface XStats {
+// Legacy format (for backward compatibility)
+interface LegacyXStats {
   username: string;
   userId: string;
   name: string;
@@ -21,6 +23,9 @@ interface XStats {
   datePreset: string;
   [key: string]: any;
 }
+
+// Support both legacy and standardized formats
+type XStats = XStatsResponse | LegacyXStats;
 
 
 

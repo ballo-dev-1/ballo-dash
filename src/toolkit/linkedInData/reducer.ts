@@ -1,9 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState, AppDispatch } from "..";
 import { fetchIntegrations } from "../Integrations/reducer";
+import type { LinkedInStatsResponse } from "@/types/linkedin";
 
 // --- Interfaces ---
-interface LinkedInStats {
+// Legacy format (for backward compatibility)
+interface LegacyLinkedInStats {
   organizationId: string;
   organizationName: string;
   followers: number | null;
@@ -21,6 +23,9 @@ interface LinkedInStats {
   datePreset: string;
   [key: string]: any;
 }
+
+// Support both legacy and standardized formats
+type LinkedInStats = LinkedInStatsResponse | LegacyLinkedInStats;
 
 
 
@@ -135,8 +140,6 @@ export const fetchLinkedInStats = createAsyncThunk<
     
     try {
       const res = await fetch(url);
-      console.log("📡 LinkedIn API response status:", res.status);
-      console.log("📡 LinkedIn API response ok:", res.ok);
 
       if (!res.ok) {
         const errText = await res.text();
@@ -176,8 +179,6 @@ export const fetchLinkedInStats = createAsyncThunk<
         if (cachedResponse.ok) {
           const cachedData = await cachedResponse.json();
           if (cachedData._cached && cachedData._fetchStatus === 'SUCCESS') {
-            console.log("📦 LinkedIn: Fresh data failed, falling back to cached data");
-            
             // Transform cached data to match LinkedInStats interface
             const transformedCachedStats: LinkedInStats = {
               organizationId,
@@ -285,7 +286,6 @@ export const fetchLinkedInStatsProgressive = createAsyncThunk<
 
     // Wait for integrations to finish loading if they're currently loading
     if (state.integrations.loading === true) {
-      console.log("⏳ Waiting for integrations to finish loading...");
       // Wait for the integration status to change from loading
       while (state.integrations.loading === true) {
         await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
@@ -484,21 +484,17 @@ const linkedinSlice = createSlice({
     builder
       // Stats
       .addCase(fetchLinkedInStats.pending, (state) => {
-        console.log("🔄 LinkedIn Reducer: fetchLinkedInStats.pending - Setting status to loading");
         state.statusStats = "loading";
         state.errorStats = null;
       })
       .addCase(fetchLinkedInStats.fulfilled, (state, action) => {
-        console.log("✅ LinkedIn Reducer: fetchLinkedInStats.fulfilled - Setting stats data");
-        console.log("📊 LinkedIn stats received:", action.payload);
         state.statusStats = "succeeded";
         state.stats = action.payload;
       })
       .addCase(fetchLinkedInStats.rejected, (state, action) => {
-        console.log("❌ LinkedIn Reducer: fetchLinkedInStats.rejected - Setting error state");
-        console.log("❌ Error:", action.error.message);
         state.statusStats = "failed";
         state.errorStats = action.error.message || "Failed to load LinkedIn stats";
+        console.error("[LinkedIn Reducer] Stats fetch failed:", action.error.message);
       })
 
       // Progressive LinkedIn Stats

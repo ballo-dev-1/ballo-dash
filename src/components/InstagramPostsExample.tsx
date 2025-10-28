@@ -107,7 +107,7 @@ const InstagramPostsExample: React.FC = () => {
           {instagramPosts && (
             <div>
               <Alert variant="success">
-                <strong>Success!</strong> Fetched {instagramPosts.total} posts from {instagramPosts.pageInfo.name}
+                <strong>Success!</strong> Fetched {instagramPosts.total} posts from {instagramPosts.pageInfo?.name || 'Instagram Account'}
               </Alert>
               
               <Card>
@@ -117,7 +117,7 @@ const InstagramPostsExample: React.FC = () => {
                 <Card.Body>
                   <Row>
                     <Col md={3}>
-                      {instagramPosts.pageInfo.profilePicture && (
+                      {instagramPosts.pageInfo?.profilePicture && (
                         <img
                           src={instagramPosts.pageInfo.profilePicture}
                           alt="Profile"
@@ -127,10 +127,10 @@ const InstagramPostsExample: React.FC = () => {
                       )}
                     </Col>
                     <Col md={9}>
-                      <h6>{instagramPosts.pageInfo.name}</h6>
-                      <p className="text-muted">@{instagramPosts.pageInfo.username}</p>
-                      <p><strong>Followers:</strong> {instagramPosts.pageInfo.followers_count?.toLocaleString()}</p>
-                      <p><strong>Media Count:</strong> {instagramPosts.pageInfo.media_count}</p>
+                      <h6>{instagramPosts.pageInfo?.name || 'Instagram Account'}</h6>
+                      <p className="text-muted">@{instagramPosts.pageInfo?.username || ''}</p>
+                      <p><strong>Followers:</strong> {instagramPosts.pageInfo?.followers_count?.toLocaleString() || '0'}</p>
+                      <p><strong>Media Count:</strong> {instagramPosts.pageInfo?.media_count || '0'}</p>
                     </Col>
                   </Row>
                 </Card.Body>

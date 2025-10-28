@@ -36,8 +36,8 @@ const transformFacebookData = (meta: any): PlatformOverview | null => {
   console.log(metrics);
 
   const pageName = pageInfo?.name ?? "-";
-  const pageFansCityArr = Array.isArray(metrics.page_fans_city?.day?.values)
-    ? metrics.page_fans_city.day.values
+  const pageFansCityArr = Array.isArray(metrics.page_likes_city?.day?.values)
+    ? metrics.page_likes_city.day.values
     : [];
 
   const lastEntry = pageFansCityArr[pageFansCityArr.length - 1];
@@ -98,8 +98,8 @@ const transformProgressiveFacebookData = (progressiveData: any): PlatformOvervie
     return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
   };
 
-  // Get page_fans_city data
-  const pageFansCity = getMetricValue("page_fans_city", "day");
+  // Get page_likes_city data
+  const pageFansCity = getMetricValue("page_likes_city", "day");
 
   if (
     pageFansCity === "Loading..." ||

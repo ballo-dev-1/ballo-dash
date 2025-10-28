@@ -11,6 +11,7 @@ import { fetchInstagramStats } from '@/toolkit/instagramData/reducer';
 import { fetchXStats } from '@/toolkit/xData/reducer';
 import { DashboardDateRange } from '@/components/DashboardDateFilter';
 import { AppDispatch } from '@/toolkit';
+import { getFlatMetricValue } from '@/lib/stats-utils';
 
 export const usePlatformStats = (dateRange?: DashboardDateRange) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -93,24 +94,20 @@ export const usePlatformStats = (dateRange?: DashboardDateRange) => {
     let totalReach = 0;
     
     // LinkedIn reach (unique impressions)
-    if (linkedInStats?.uniqueImpressionsCount) {
-      totalReach += linkedInStats.uniqueImpressionsCount;
-    }
+    const linkedInReach = getFlatMetricValue(linkedInStats, 'unique_impressions_count', 'uniqueImpressionsCount');
+    if (linkedInReach) totalReach += Number(linkedInReach);
     
-    // Facebook reach (post impressions)
-    if (facebookStats?.post_impressions) {
-      totalReach += facebookStats.post_impressions;
-    }
+    // Facebook reach
+    const facebookReach = getFlatMetricValue(facebookStats, 'page_reach', 'post_impressions');
+    if (facebookReach) totalReach += Number(facebookReach);
     
-    // Instagram reach (impressions)
-    if (instagramStats?.impressions) {
-      totalReach += instagramStats.impressions;
-    }
+    // Instagram reach
+    const instagramReach = getFlatMetricValue(instagramStats, 'reach', 'impressions');
+    if (instagramReach) totalReach += Number(instagramReach);
     
-    // X reach (impressions)
-    if (xStats?.impressions) {
-      totalReach += xStats.impressions;
-    }
+    // X reach (followers as proxy for potential reach)
+    const xReach = getFlatMetricValue(xStats, 'followers', 'impressions');
+    if (xReach) totalReach += Number(xReach);
     
     return totalReach;
   };
@@ -121,38 +118,50 @@ export const usePlatformStats = (dateRange?: DashboardDateRange) => {
     
     // LinkedIn engagement (likes + comments + shares)
     if (linkedInStats) {
-      const linkedInEngagement = (linkedInStats.likeCount || 0) + 
-                                (linkedInStats.commentCount || 0) + 
-                                (linkedInStats.shareCount || 0);
-      totalEngagement += linkedInEngagement;
+      const likes = Number(getFlatMetricValue(linkedInStats, 'like_count', 'likeCount') || 0);
+      const comments = Number(getFlatMetricValue(linkedInStats, 'comment_count', 'commentCount') || 0);
+      const shares = Number(getFlatMetricValue(linkedInStats, 'share_count', 'shareCount') || 0);
+      totalEngagement += likes + comments + shares;
     }
     
-    // Facebook engagement (likes + comments + shares)
+    // Facebook engagement (post engagements)
     if (facebookStats) {
-      const facebookEngagement = (facebookStats.post_reactions_like_total || 0) +
-                                (facebookStats.post_reactions_love_total || 0) +
-                                (facebookStats.post_reactions_wow_total || 0) +
-                                (facebookStats.post_reactions_haha_total || 0) +
-                                (facebookStats.post_reactions_sorry_total || 0) +
-                                (facebookStats.post_reactions_anger_total || 0) +
-                                (facebookStats.comment || 0) +
-                                (facebookStats.share || 0);
-      totalEngagement += facebookEngagement;
+      const fbEngagement = Number(getFlatMetricValue(facebookStats, 'page_post_engagements') || 0);
+      if (fbEngagement > 0) {
+        totalEngagement += fbEngagement;
+      } else {
+        // Fallback to calculating from individual reactions (legacy)
+        const reactions = (facebookStats.post_reactions_like_total || 0) +
+                         (facebookStats.post_reactions_love_total || 0) +
+                         (facebookStats.post_reactions_wow_total || 0) +
+                         (facebookStats.post_reactions_haha_total || 0) +
+                         (facebookStats.post_reactions_sorry_total || 0) +
+                         (facebookStats.post_reactions_anger_total || 0) +
+                         (facebookStats.comment || 0) +
+                         (facebookStats.share || 0);
+        totalEngagement += reactions;
+      }
     }
     
-    // Instagram engagement (likes + comments)
+    // Instagram engagement (total interactions)
     if (instagramStats) {
-      const instagramEngagement = (instagramStats.likes || 0) + 
-                                 (instagramStats.comments || 0);
-      totalEngagement += instagramEngagement;
+      const igEngagement = Number(getFlatMetricValue(instagramStats, 'total_interactions') || 0);
+      if (igEngagement > 0) {
+        totalEngagement += igEngagement;
+      } else {
+        // Fallback to likes + comments (legacy)
+        const likes = Number(getFlatMetricValue(instagramStats, 'likes', 'likes') || 0);
+        const comments = Number(getFlatMetricValue(instagramStats, 'comments', 'comments') || 0);
+        totalEngagement += likes + comments;
+      }
     }
     
     // X engagement (likes + retweets + replies)
     if (xStats) {
-      const xEngagement = (xStats.likes || 0) + 
-                          (xStats.retweets || 0) + 
-                          (xStats.replies || 0);
-      totalEngagement += xEngagement;
+      const likes = Number(getFlatMetricValue(xStats, 'like_count', 'likes') || 0);
+      const retweets = Number(xStats.retweets || 0);
+      const replies = Number(xStats.replies || 0);
+      totalEngagement += likes + retweets + replies;
     }
     
     return totalEngagement;
@@ -192,48 +201,44 @@ export const usePlatformStats = (dateRange?: DashboardDateRange) => {
   const previousReach = Math.floor(totalReach * 0.85); // Simulate previous period
   const previousEngagement = Math.floor(totalEngagement * 0.77); // Simulate previous period
 
-  // Debug logging to see actual data
-  console.log('🔍 usePlatformStats Debug:', {
-    dateRange: dateRange ? {
-      current: {
-        start: dateRange.current.startDate.toISOString().split('T')[0],
-        end: dateRange.current.endDate.toISOString().split('T')[0]
+  // Debug logging to see actual data (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 usePlatformStats Debug:', {
+      dateRange: dateRange ? {
+        current: {
+          start: dateRange.current.startDate.toISOString().split('T')[0],
+          end: dateRange.current.endDate.toISOString().split('T')[0]
+        }
+      } : 'No date range',
+      platformStats: {
+        linkedIn: linkedInStats ? {
+          reach: getFlatMetricValue(linkedInStats, 'unique_impressions_count', 'uniqueImpressionsCount'),
+          likes: getFlatMetricValue(linkedInStats, 'like_count', 'likeCount'),
+          comments: getFlatMetricValue(linkedInStats, 'comment_count', 'commentCount'),
+        } : null,
+        facebook: facebookStats ? {
+          reach: getFlatMetricValue(facebookStats, 'page_reach', 'post_impressions'),
+          engagement: getFlatMetricValue(facebookStats, 'page_post_engagements'),
+        } : null,
+        instagram: instagramStats ? {
+          reach: getFlatMetricValue(instagramStats, 'reach', 'impressions'),
+          engagement: getFlatMetricValue(instagramStats, 'total_interactions'),
+        } : null,
+        x: xStats ? {
+          followers: getFlatMetricValue(xStats, 'followers'),
+          likes: getFlatMetricValue(xStats, 'like_count', 'likes'),
+        } : null
+      },
+      calculatedTotals: {
+        totalReach,
+        totalEngagement,
+        previousReach,
+        previousEngagement,
+        reachPercentageChange,
+        engagementPercentageChange
       }
-    } : 'No date range',
-    platformStats: {
-      linkedIn: {
-        uniqueImpressionsCount: linkedInStats?.uniqueImpressionsCount,
-        likeCount: linkedInStats?.likeCount,
-        commentCount: linkedInStats?.commentCount,
-        shareCount: linkedInStats?.shareCount
-      },
-      facebook: {
-        post_impressions: facebookStats?.post_impressions,
-        post_reactions_like_total: facebookStats?.post_reactions_like_total,
-        comment: facebookStats?.comment,
-        share: facebookStats?.share
-      },
-      instagram: {
-        impressions: instagramStats?.impressions,
-        likes: instagramStats?.likes,
-        comments: instagramStats?.comments
-      },
-      x: {
-        impressions: xStats?.impressions,
-        likes: xStats?.likes,
-        retweets: xStats?.retweets,
-        replies: xStats?.replies
-      }
-    },
-    calculatedTotals: {
-      totalReach,
-      totalEngagement,
-      previousReach,
-      previousEngagement,
-      reachPercentageChange,
-      engagementPercentageChange
-    }
-  });
+    });
+  }
 
   // Check if any platform is loading
   const isLoading = linkedInLoading === 'loading' || instagramLoading === 'loading' || xLoading === 'loading';

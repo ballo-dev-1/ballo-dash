@@ -1,5 +1,8 @@
 // src/services/dataTransformationService.ts
 
+import { extractMetricValue } from '@/lib/stats-utils';
+import type { StandardStatsResponse } from '@/types/shared-stats';
+
 export interface PlatformOverview {
   platform: string;
   pageName: string;
@@ -33,6 +36,7 @@ export interface ProgressiveFacebookData {
   recentPost: any;
   loadingMetrics: any;
   platform: string;
+  datePreset?: string;
 }
 
 export interface ProgressiveLinkedInData {
@@ -195,33 +199,81 @@ class DataTransformationService {
   }
 
   /**
-   * Transform Facebook data to PlatformOverview format
+   * Check if data is in standardized format (has accountInfo and nested metrics)
    */
-  public transformFacebookData(facebookData: FacebookData): PlatformOverview | null {
+  private isStandardizedFormat(data: any): data is StandardStatsResponse {
+    return data && data.accountInfo && data.metrics && data.cache && data.dateRange;
+  }
+
+  /**
+   * Extract metric value from either standardized or legacy format
+   */
+  private getMetricValue(
+    data: any,
+    metricName: string,
+    fallbackPath?: string[]
+  ): any {
+    // Try standardized format first
+    if (this.isStandardizedFormat(data)) {
+      return extractMetricValue(data.metrics, metricName, '-');
+    }
+
+    // Fallback to legacy format
+    if (fallbackPath && data) {
+      let value = data;
+      for (const key of fallbackPath) {
+        value = value?.[key];
+        if (value === undefined) return '-';
+      }
+      return value;
+    }
+
+    return '-';
+  }
+
+  /**
+   * Transform Facebook data to PlatformOverview format
+   * Uses the new simplified structure with proper typing
+   */
+  public transformFacebookData(facebookData: FacebookData | any): PlatformOverview | null {
     if (!facebookData) return null;
 
-    const { pageInfo, metrics, recentPost } = facebookData;
+    const { pageInfo, accountInfo, metrics, recentPost } = facebookData;
     
     // Defensive check for metrics
     if (!metrics || typeof metrics !== 'object') {
+      console.warn('[DataTransform] Invalid metrics structure in Facebook data');
       return null;
     }
     
-    const pageName = pageInfo?.name ?? "-";
+    // Use accountInfo if available (new format), otherwise fall back to pageInfo (old format)
+    const pageName = accountInfo?.name ?? pageInfo?.name ?? "-";
 
-    // Helper function to get metric value
-    const getMetricValue = (metricName: string, period: string, defaultValue: any = "-") => {
+    // Handle both FLAT and PERIOD-NESTED formats
+    const getMetricValue = (metricName: string, defaultValue: any = "-") => {
       if (!metrics || !metrics[metricName]) {
         return defaultValue;
       }
       
       const metricData = metrics[metricName] as any;
-      if (!metricData || !metricData[period]) {
-        return defaultValue;
+      
+      // NEW FORMAT: Flat structure with values array directly
+      if (metricData.values && Array.isArray(metricData.values)) {
+        return metricData.values.length > 0 ? metricData.values[metricData.values.length - 1].value : defaultValue;
       }
       
+      // OLD FORMAT: Period-nested structure (backward compatibility)
+      const periods = ['lifetime', 'day', 'week', 'days_28'];
+      for (const period of periods) {
+        if (metricData[period]?.values && Array.isArray(metricData[period].values)) {
       const values = metricData[period].values;
-      return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
+          if (values.length > 0) {
+            return values[values.length - 1].value;
+          }
+        }
+      }
+      
+      return defaultValue;
     };
 
     // Helper function to format recent post date
@@ -235,43 +287,53 @@ class DataTransformationService {
       return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
     };
 
+    const likes = getMetricValue("page_likes");
+    const follows = getMetricValue("page_follows");
+    const reach = getMetricValue("page_reach");
+    const engagement = getMetricValue("page_post_engagements");
+    const actions = getMetricValue("page_actions");
+
     return {
       platform: "Facebook",
       pageName,
-      page_fans: getMetricValue("page_fans", "day"),
-      page_follows: getMetricValue("page_follows", "day"),
-      page_status: getMetricValue("page_status", "day"),
-      "Reach (day)": getMetricValue("page_impressions", "day"),
-      "Reach (week)": getMetricValue("page_impressions", "week"),
-      "Reach (month)": getMetricValue("page_impressions", "days_28"),
-      "Engagement (day)": getMetricValue("page_post_engagements", "day"),
-      "Engagement (week)": getMetricValue("page_post_engagements", "week"),
-      "Engagement (month)": getMetricValue("page_post_engagements", "days_28"),
-      "CTA Clicks (day)": getMetricValue("page_total_actions", "day"),
-      "CTA Clicks (week)": getMetricValue("page_total_actions", "week"),
-      "CTA Clicks (month)": getMetricValue("page_total_actions", "days_28"),
-      engagement: getMetricValue("page_impressions", "days_28"),
+      page_fans: likes,
+      page_follows: follows,
+      page_status: getMetricValue("page_status"),
+      "Reach (day)": reach,
+      "Reach (week)": reach, // Flat structure doesn't have periods
+      "Reach (month)": reach,
+      "Engagement (day)": engagement,
+      "Engagement (week)": engagement,
+      "Engagement (month)": engagement,
+      "CTA Clicks (day)": actions,
+      "CTA Clicks (week)": actions,
+      "CTA Clicks (month)": actions,
+      engagement: engagement,
       last_post_date: getRecentPostDate(),
     };
   }
 
   /**
    * Transform progressive Facebook data to PlatformOverview format
+   * Simplified version without complex quarter logic
    */
-  public transformProgressiveFacebookData(progressiveData: ProgressiveFacebookData): PlatformOverview | null {
+  public transformProgressiveFacebookData(progressiveData: ProgressiveFacebookData | any): PlatformOverview | null {
     if (!progressiveData) return null;
 
-    const { pageInfo, metrics, recentPost, loadingMetrics } = progressiveData;
+    const { pageInfo, accountInfo, metrics, recentPost, loadingMetrics } = progressiveData;
     
     // Defensive check for metrics
     if (!metrics || typeof metrics !== 'object') {
+      console.warn('[DataTransform] Invalid metrics structure in progressive Facebook data');
       return null;
     }
     
-    const pageName = pageInfo?.name ?? "-";
+    // Use accountInfo if available (new format), otherwise fall back to pageInfo (old format)
+    const pageName = accountInfo?.name ?? pageInfo?.name ?? "-";
 
-    // Helper function to get metric value with loading state
-    const getMetricValue = (metricName: string, period: string, defaultValue: any = "-") => {
+    // Handle both FLAT and PERIOD-NESTED formats with loading state
+    const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+      // Check if this metric is still loading
       if (loadingMetrics?.includes(metricName)) {
         return "Loading...";
       }
@@ -281,12 +343,24 @@ class DataTransformationService {
       }
       
       const metricData = metrics[metricName] as any;
-      if (!metricData || !metricData[period]) {
-        return defaultValue;
+      
+      // NEW FORMAT: Flat structure with values array directly
+      if (metricData.values && Array.isArray(metricData.values)) {
+        return metricData.values.length > 0 ? metricData.values[metricData.values.length - 1].value : defaultValue;
       }
       
-      const values = metricData[period].values;
-      return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
+      // OLD FORMAT: Period-nested structure (backward compatibility)
+      const periods = ['lifetime', 'day', 'week', 'days_28'];
+      for (const period of periods) {
+        if (metricData[period]?.values && Array.isArray(metricData[period].values)) {
+          const values = metricData[period].values;
+          if (values.length > 0) {
+            return values[values.length - 1].value;
+          }
+        }
+      }
+      
+      return defaultValue;
     };
 
     // Helper function to format recent post date
@@ -300,22 +374,28 @@ class DataTransformationService {
       return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
     };
 
+    const likes = getMetricValue("page_likes");
+    const follows = getMetricValue("page_follows");
+    const reach = getMetricValue("page_reach");
+    const engagement = getMetricValue("page_post_engagements");
+    const actions = getMetricValue("page_actions");
+
     return {
       platform: progressiveData.platform || "Facebook",
       pageName,
-      page_fans: getMetricValue("page_fans", "lifetime"),
-      page_follows: getMetricValue("page_follows", "day"),
-      page_status: getMetricValue("page_status", "day"),
-      "Reach (day)": getMetricValue("page_impressions", "day"),
-      "Reach (week)": getMetricValue("page_impressions", "week"),
-      "Reach (month)": getMetricValue("page_impressions", "days_28"),
-      "Engagement (day)": getMetricValue("page_post_engagements", "day"),
-      "Engagement (week)": getMetricValue("page_post_engagements", "week"),
-      "Engagement (month)": getMetricValue("page_post_engagements", "days_28"),
-      "CTA Clicks (day)": getMetricValue("page_total_actions", "day"),
-      "CTA Clicks (week)": getMetricValue("page_total_actions", "week"),
-      "CTA Clicks (month)": getMetricValue("page_total_actions", "days_28"),
-      engagement: getMetricValue("page_impressions", "days_28"),
+      page_fans: likes,
+      page_follows: follows,
+      page_status: getMetricValue("page_status"),
+      "Reach (day)": reach,
+      "Reach (week)": reach, // Flat structure doesn't have periods
+      "Reach (month)": reach,
+      "Engagement (day)": engagement,
+      "Engagement (week)": engagement,
+      "Engagement (month)": engagement,
+      "CTA Clicks (day)": actions,
+      "CTA Clicks (week)": actions,
+      "CTA Clicks (month)": actions,
+      engagement: engagement,
       last_post_date: getRecentPostDate(),
     };
   }
@@ -323,29 +403,54 @@ class DataTransformationService {
   /**
    * Transform LinkedIn data to PlatformOverview format
    */
-  public transformLinkedInData(linkedInData: LinkedInData): PlatformOverview | null {
+  public transformLinkedInData(linkedInData: LinkedInData | any): PlatformOverview | null {
     if (!linkedInData) return null;
 
-    // Defensive check for required fields
-    if (!linkedInData.organizationName) {
-      return null;
+    // Helper function to extract metric value from flat structure
+    const getMetricValue = (metrics: any, metricName: string): number | null => {
+      const metricData = metrics?.[metricName];
+      if (!metricData || !metricData.values || metricData.values.length === 0) {
+        return null;
+      }
+      return metricData.values[metricData.values.length - 1].value;
+    };
+
+    // Check if using new standardized format with accountInfo and flat metrics
+    const isStandardized = linkedInData.accountInfo && linkedInData.metrics;
+    
+    let pageName, followers, impressions, engagement, clicks;
+    
+    if (isStandardized) {
+      // NEW FORMAT: Use accountInfo and flat metrics
+      pageName = linkedInData.accountInfo.name || "LinkedIn Company";
+      followers = getMetricValue(linkedInData.metrics, "page_follows");
+      impressions = getMetricValue(linkedInData.metrics, "impression_count");
+      engagement = getMetricValue(linkedInData.metrics, "engagement");
+      clicks = getMetricValue(linkedInData.metrics, "click_count");
+    } else {
+      // OLD FORMAT: Use flat structure
+      pageName = linkedInData.organizationName || "LinkedIn Company";
+      followers = linkedInData.followers;
+      impressions = linkedInData.impressionCount;
+      engagement = linkedInData.engagement;
+      clicks = linkedInData.clickCount;
     }
 
     return {
       platform: "LinkedIn",
-      pageName: linkedInData.organizationName || "LinkedIn Company",
-      page_fans: linkedInData.followers || "-",
-      page_follows: linkedInData.followers || "-",
-      "Reach (day)": linkedInData.impressionCount || "-",
-      "Reach (week)": linkedInData.impressionCount || "-",
-      "Reach (month)": linkedInData.impressionCount || "-",
-      "Engagement (day)": linkedInData.engagement || "-",
-      "Engagement (week)": linkedInData.engagement || "-",
-      "Engagement (month)": linkedInData.engagement || "-",
-      "CTA Clicks (day)": linkedInData.clickCount || "-",
-      "CTA Clicks (week)": linkedInData.clickCount || "-",
-      "CTA Clicks (month)": linkedInData.clickCount || "-",
-      engagement: linkedInData.engagement || "-",
+      pageName,
+      page_fans: followers || "-",
+      page_follows: followers || "-",
+      "Reach (day)": impressions || "-",
+      "Reach (week)": impressions || "-",
+      "Reach (month)": impressions || "-",
+      "Engagement (day)": engagement || "-",
+      "Engagement (week)": engagement || "-",
+      "Engagement (month)": engagement || "-",
+      "CTA Clicks (day)": clicks || "-",
+      "CTA Clicks (week)": clicks || "-",
+      "CTA Clicks (month)": clicks || "-",
+      engagement: engagement || "-",
       last_post_date: "-", // LinkedIn posts are fetched separately
     };
   }
@@ -353,29 +458,54 @@ class DataTransformationService {
   /**
    * Transform progressive LinkedIn data to PlatformOverview format
    */
-  public transformProgressiveLinkedInData(progressiveLinkedInData: ProgressiveLinkedInData): PlatformOverview | null {
+  public transformProgressiveLinkedInData(progressiveLinkedInData: ProgressiveLinkedInData | any): PlatformOverview | null {
     if (!progressiveLinkedInData) return null;
 
-    // Defensive check for required fields
-    if (!progressiveLinkedInData.organizationName) {
-      return null;
+    // Helper function to extract metric value from flat structure
+    const getMetricValueFromMetrics = (metricName: string): number | null => {
+      const metricData = progressiveLinkedInData.metrics?.[metricName];
+      if (!metricData || !metricData.values || metricData.values.length === 0) {
+        return null;
+      }
+      return metricData.values[metricData.values.length - 1].value;
+    };
+
+    // Check if using new standardized format
+    const hasNewFormat = progressiveLinkedInData.accountInfo || progressiveLinkedInData.metrics;
+    
+    let pageName, followers, impressions, engagement, clicks;
+    
+    if (hasNewFormat) {
+      // NEW FORMAT: Use accountInfo and flat metrics
+      pageName = progressiveLinkedInData.accountInfo?.name ?? progressiveLinkedInData.organizationName ?? "LinkedIn Company";
+      followers = getMetricValueFromMetrics("page_follows") ?? progressiveLinkedInData.followers;
+      impressions = getMetricValueFromMetrics("impression_count") ?? progressiveLinkedInData.impressionCount;
+      engagement = getMetricValueFromMetrics("engagement") ?? progressiveLinkedInData.engagement;
+      clicks = getMetricValueFromMetrics("click_count") ?? progressiveLinkedInData.clickCount;
+    } else {
+      // OLD FORMAT: Use flat structure
+      pageName = progressiveLinkedInData.organizationName || "LinkedIn Company";
+      followers = progressiveLinkedInData.followers;
+      impressions = progressiveLinkedInData.impressionCount;
+      engagement = progressiveLinkedInData.engagement;
+      clicks = progressiveLinkedInData.clickCount;
     }
 
     return {
       platform: "LinkedIn",
-      pageName: progressiveLinkedInData.organizationName || "LinkedIn Company",
-      page_fans: progressiveLinkedInData.followers || "-",
-      page_follows: progressiveLinkedInData.followers || "-",
-      "Reach (day)": progressiveLinkedInData.impressionCount || "-",
-      "Reach (week)": progressiveLinkedInData.impressionCount || "-",
-      "Reach (month)": progressiveLinkedInData.impressionCount || "-",
-      "Engagement (day)": progressiveLinkedInData.engagement || "-",
-      "Engagement (week)": progressiveLinkedInData.engagement || "-",
-      "Engagement (month)": progressiveLinkedInData.engagement || "-",
-      "CTA Clicks (day)": progressiveLinkedInData.clickCount || "-",
-      "CTA Clicks (week)": progressiveLinkedInData.clickCount || "-",
-      "CTA Clicks (month)": progressiveLinkedInData.clickCount || "-",
-      engagement: progressiveLinkedInData.engagement || "-",
+      pageName,
+      page_fans: followers || "-",
+      page_follows: followers || "-",
+      "Reach (day)": impressions || "-",
+      "Reach (week)": impressions || "-",
+      "Reach (month)": impressions || "-",
+      "Engagement (day)": engagement || "-",
+      "Engagement (week)": engagement || "-",
+      "Engagement (month)": engagement || "-",
+      "CTA Clicks (day)": clicks || "-",
+      "CTA Clicks (week)": clicks || "-",
+      "CTA Clicks (month)": clicks || "-",
+      engagement: engagement || "-",
       last_post_date: "-", // LinkedIn posts are fetched separately
     };
   }
@@ -502,10 +632,17 @@ class DataTransformationService {
 
   /**
    * Transform Instagram data to PlatformOverview format
+   * Supports both legacy and standardized formats
    */
-  public transformInstagramData(instagramData: InstagramData): PlatformOverview | null {
+  public transformInstagramData(instagramData: InstagramData | any): PlatformOverview | null {
     if (!instagramData) return null;
 
+    // Check if standardized format
+    if (this.isStandardizedFormat(instagramData)) {
+      return this.transformStandardizedData(instagramData);
+    }
+
+    // Legacy format handling
     // Defensive check for required fields
     if (!instagramData.userInfo?.username) {
       return null;
@@ -637,6 +774,116 @@ class DataTransformationService {
       engagement: getMetricValue("engagement"),
       last_post_date: "-", // Instagram posts are fetched separately
     };
+  }
+
+  /**
+   * Transform standardized stats response to PlatformOverview format
+   * Works with any platform in standardized format
+   */
+  public transformStandardizedData(data: StandardStatsResponse): PlatformOverview | null {
+    if (!data || !data.accountInfo) return null;
+
+    const platform = data.platform.charAt(0).toUpperCase() + data.platform.slice(1);
+    const pageName = data.accountInfo.name;
+
+    // Helper function to format recent post date
+    const getRecentPostDate = () => {
+      if (!data.recentPost?.data?.[0]) return "-";
+      
+      const post = data.recentPost.data[0];
+      const timestamp = post.created_time || post.timestamp;
+      
+      if (!timestamp) return "-";
+      
+      const parsedDate = new Date(timestamp);
+      return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
+    };
+
+    // Platform-specific metric extraction
+    switch (data.platform.toLowerCase()) {
+      case 'facebook':
+        return {
+          platform: "Facebook",
+          pageName,
+          page_fans: extractMetricValue(data.metrics, 'page_likes', '-'),
+          page_follows: extractMetricValue(data.metrics, 'page_follows', '-'),
+          page_status: extractMetricValue(data.metrics, 'page_status', '-'),
+          "Reach (day)": extractMetricValue(data.metrics, 'page_reach', '-'),
+          "Reach (week)": extractMetricValue(data.metrics, 'page_reach', '-'),
+          "Reach (month)": extractMetricValue(data.metrics, 'page_reach', '-'),
+          "Engagement (day)": extractMetricValue(data.metrics, 'page_post_engagements', '-'),
+          "Engagement (week)": extractMetricValue(data.metrics, 'page_post_engagements', '-'),
+          "Engagement (month)": extractMetricValue(data.metrics, 'page_post_engagements', '-'),
+          "CTA Clicks (day)": extractMetricValue(data.metrics, 'page_actions', '-'),
+          "CTA Clicks (week)": extractMetricValue(data.metrics, 'page_actions', '-'),
+          "CTA Clicks (month)": extractMetricValue(data.metrics, 'page_actions', '-'),
+          engagement: extractMetricValue(data.metrics, 'page_post_engagements', '-'),
+          last_post_date: getRecentPostDate(),
+        };
+
+      case 'instagram':
+        const followers = extractMetricValue(data.metrics, 'followers', 0);
+        return {
+          platform: "Instagram",
+          pageName,
+          page_fans: followers || "-",
+          page_follows: followers || "-",
+          "Reach (day)": extractMetricValue(data.metrics, 'reach', '-'),
+          "Reach (week)": extractMetricValue(data.metrics, 'reach', '-'),
+          "Reach (month)": extractMetricValue(data.metrics, 'reach', '-'),
+          "Engagement (day)": extractMetricValue(data.metrics, 'total_interactions', '-'),
+          "Engagement (week)": extractMetricValue(data.metrics, 'total_interactions', '-'),
+          "Engagement (month)": extractMetricValue(data.metrics, 'total_interactions', '-'),
+          "CTA Clicks (day)": extractMetricValue(data.metrics, 'website_clicks', '-'),
+          "CTA Clicks (week)": extractMetricValue(data.metrics, 'website_clicks', '-'),
+          "CTA Clicks (month)": extractMetricValue(data.metrics, 'website_clicks', '-'),
+          engagement: extractMetricValue(data.metrics, 'total_interactions', '-'),
+          last_post_date: getRecentPostDate(),
+        };
+
+      case 'linkedin':
+        return {
+          platform: "LinkedIn",
+          pageName,
+          page_fans: extractMetricValue(data.metrics, 'page_follows', '-'),
+          page_follows: extractMetricValue(data.metrics, 'page_follows', '-'),
+          "Reach (day)": extractMetricValue(data.metrics, 'impression_count', '-'),
+          "Reach (week)": extractMetricValue(data.metrics, 'impression_count', '-'),
+          "Reach (month)": extractMetricValue(data.metrics, 'impression_count', '-'),
+          "Engagement (day)": extractMetricValue(data.metrics, 'engagement', '-'),
+          "Engagement (week)": extractMetricValue(data.metrics, 'engagement', '-'),
+          "Engagement (month)": extractMetricValue(data.metrics, 'engagement', '-'),
+          "CTA Clicks (day)": extractMetricValue(data.metrics, 'click_count', '-'),
+          "CTA Clicks (week)": extractMetricValue(data.metrics, 'click_count', '-'),
+          "CTA Clicks (month)": extractMetricValue(data.metrics, 'click_count', '-'),
+          engagement: extractMetricValue(data.metrics, 'engagement', '-'),
+          last_post_date: "-",
+        };
+
+      case 'x':
+        const xFollowers = extractMetricValue(data.metrics, 'followers', 0);
+        const xLikes = extractMetricValue(data.metrics, 'like_count', 0);
+        return {
+          platform: "X (Twitter)",
+          pageName,
+          page_fans: xLikes || "-",
+          page_follows: xFollowers || "-",
+          "Reach (day)": xFollowers || "-",
+          "Reach (week)": xFollowers || "-",
+          "Reach (month)": xFollowers || "-",
+          "Engagement (day)": xLikes || "-",
+          "Engagement (week)": xLikes || "-",
+          "Engagement (month)": xLikes || "-",
+          "CTA Clicks (day)": extractMetricValue(data.metrics, 'media_count', '-'),
+          "CTA Clicks (week)": extractMetricValue(data.metrics, 'media_count', '-'),
+          "CTA Clicks (month)": extractMetricValue(data.metrics, 'media_count', '-'),
+          engagement: xLikes || "-",
+          last_post_date: "-",
+        };
+
+      default:
+        return null;
+    }
   }
 }
 

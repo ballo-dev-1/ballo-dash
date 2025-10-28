@@ -41,7 +41,6 @@ type InstagramTransformedPost = {
 };
 
 function transformInstagramData(data: InstagramRawPost[]): InstagramTransformedPost[] {
-  console.log('🚀🚀🚀transformInstagramData', data);
   return data
     .filter(
       (post): post is InstagramRawPost & { message: string; created_time: string } =>
@@ -95,8 +94,6 @@ const InstagramPostsTable: React.FC<Props> = ({
   onToggleExpand,
   data,
 }) => {
-  console.log("📸 InstagramPostsTable - Data:", data);
-
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
   const transformedData = Array.isArray(data?.posts)

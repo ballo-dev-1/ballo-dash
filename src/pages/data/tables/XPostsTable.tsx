@@ -45,7 +45,6 @@ type XTransformedPost = {
 };
 
 function transformXData(data: XRawPost[]): XTransformedPost[] {
-  console.log('🐦🐦🐦transformXData', data);
   return data
     .filter(
       (post): post is XRawPost & { message: string; created_time: string } =>
@@ -98,8 +97,6 @@ const XPostsTable: React.FC<Props> = ({
   onToggleExpand,
   data,
 }) => {
-  console.log("🐦 XPostsTable - Data:", data);
-
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
   const transformedData = Array.isArray(data?.posts)

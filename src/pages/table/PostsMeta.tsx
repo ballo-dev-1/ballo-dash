@@ -21,7 +21,7 @@ const transformFacebookData = (meta: any): PlatformOverview | null => {
   } = meta;
 
   const pageName = pageInfo?.name ?? "-";
-  const pageFansCityArr = metrics.page_fans_city?.day?.values || [];
+  const pageFansCityArr = metrics.page_likes_city?.day?.values || [];
   const pageFansCity = pageFansCityArr[pageFansCityArr.length - 1].value ?? "-";
   if (
     pageFansCity === "-" ||

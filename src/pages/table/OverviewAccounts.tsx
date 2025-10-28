@@ -46,42 +46,29 @@ const transformFacebookData = (facebook: any): PlatformOverview | null => {
   const {
     platform = "Facebook",
     pageInfo,
+    accountInfo,
     metrics = {},
     recentPost = "-",
   } = facebook;
 
-  const pageName = pageInfo?.name ?? "-";
-  const pageFansArr = metrics.page_fans?.day?.values || [];
-  const page_fans = pageFansArr[pageFansArr.length - 1]?.value ?? "-";
-  const pageFollowsArr = metrics.page_follows?.day?.values || [];
+  // Use accountInfo if available (new format), otherwise fall back to pageInfo (old format)
+  const pageName = accountInfo?.name ?? pageInfo?.name ?? "-";
+  
+  // NEW FORMAT: Flat metrics without period nesting
+  const pageLikesArr = metrics.page_likes?.values || [];
+  const page_fans = pageLikesArr[pageLikesArr.length - 1]?.value ?? "-";
+  
+  const pageFollowsArr = metrics.page_follows?.values || [];
   const page_follows = pageFollowsArr[pageFollowsArr.length - 1]?.value ?? "-";
 
-  const reachDayArr = metrics?.page_impressions?.day?.values ?? [];
-  const reachWeekArr = metrics?.page_impressions?.week?.values ?? [];
-  const reachMonthArr = metrics?.page_impressions?.days_28?.values ?? [];
-  const reachDay = reachDayArr[reachDayArr.length - 1]?.value ?? "-";
-  const reachWeek = reachWeekArr[reachWeekArr.length - 1]?.value ?? "-";
-  const reachMonth = reachMonthArr[reachMonthArr.length - 1]?.value ?? "-";
+  const reachArr = metrics?.page_reach?.values ?? [];
+  const reach = reachArr[reachArr.length - 1]?.value ?? "-";
 
-  const engagementDayArr = metrics?.page_post_engagements?.day?.values ?? [];
-  const engagementWeekArr = metrics?.page_post_engagements?.week?.values ?? [];
-  const engagementMonthArr =
-    metrics?.page_post_engagements?.days_28?.values ?? [];
-  const engagementDay =
-    engagementDayArr[engagementDayArr.length - 1].value ?? "-";
-  const engagementWeek =
-    engagementWeekArr[engagementWeekArr.length - 1].value ?? "-";
-  const engagementMonth =
-    engagementMonthArr[engagementMonthArr.length - 1].value ?? "-";
+  const engagementArr = metrics?.page_post_engagements?.values ?? [];
+  const engagement = engagementArr[engagementArr.length - 1]?.value ?? "-";
 
-  const ctaClicksDayArr = metrics?.page_total_actions?.day?.values ?? [];
-  const ctaClicksWeekArr = metrics?.page_total_actions?.week?.values ?? [];
-  const ctaClicksMonthArr = metrics?.page_total_actions?.days_28?.values ?? [];
-  const ctaClicksDay = ctaClicksDayArr[ctaClicksDayArr.length - 1].value ?? "-";
-  const ctaClicksWeek =
-    ctaClicksWeekArr[ctaClicksWeekArr.length - 1].value ?? "-";
-  const ctaClicksMonth =
-    ctaClicksMonthArr[ctaClicksMonthArr.length - 1].value ?? "-";
+  const ctaClicksArr = metrics?.page_actions?.values ?? [];
+  const ctaClicks = ctaClicksArr[ctaClicksArr.length - 1]?.value ?? "-";
 
   let recentPostDate = "-";
 
@@ -92,7 +79,7 @@ const transformFacebookData = (facebook: any): PlatformOverview | null => {
     const parsedDate = new Date(isoDateStr);
 
     if (!isNaN(parsedDate.getTime())) {
-      recentPostDate = parsedDate.toLocaleString(); // or use a custom formatter
+      recentPostDate = parsedDate.toLocaleString();
     }
   }
 
@@ -101,16 +88,16 @@ const transformFacebookData = (facebook: any): PlatformOverview | null => {
     pageName,
     page_fans,
     page_follows,
-    "Reach (day)": reachDay,
-    "Reach (week)": reachWeek,
-    "Reach (month)": reachMonth,
-    "Engagement (day)": engagementDay,
-    "Engagement (week)": engagementWeek,
-    "Engagement (month)": engagementMonth,
-    "CTA Clicks (day)": ctaClicksDay,
-    "CTA Clicks (week)": ctaClicksWeek,
-    "CTA Clicks (month)": ctaClicksMonth,
-    engagement: reachMonth,
+    "Reach (day)": reach,
+    "Reach (week)": reach, // Flat structure doesn't have periods, use same value
+    "Reach (month)": reach,
+    "Engagement (day)": engagement,
+    "Engagement (week)": engagement,
+    "Engagement (month)": engagement,
+    "CTA Clicks (day)": ctaClicks,
+    "CTA Clicks (week)": ctaClicks,
+    "CTA Clicks (month)": ctaClicks,
+    engagement: engagement,
     last_post_date: recentPostDate,
   };
 };
@@ -119,22 +106,23 @@ const transformFacebookData = (facebook: any): PlatformOverview | null => {
 const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
   if (!progressiveData) return null;
 
-  const { pageInfo, metrics, recentPost, loadingMetrics } = progressiveData;
+  const { pageInfo, accountInfo, metrics, recentPost, loadingMetrics } = progressiveData;
 
-  const pageName = pageInfo?.name ?? "-";
+  // Use accountInfo if available (new format), otherwise fall back to pageInfo (old format)
+  const pageName = accountInfo?.name ?? pageInfo?.name ?? "-";
 
-  // Helper function to get metric value with loading state
-  const getMetricValue = (metricName: string, period: string, defaultValue: any = "-") => {
+  // Helper function to get metric value with loading state - NOW FLAT STRUCTURE
+  const getMetricValue = (metricName: string, defaultValue: any = "-") => {
     if (loadingMetrics?.includes(metricName)) {
       return "Loading...";
     }
     
     const metricData = metrics[metricName];
-    if (!metricData || !metricData[period]) {
+    if (!metricData || !metricData.values) {
       return defaultValue;
     }
     
-    const values = metricData[period].values;
+    const values = metricData.values;
     return values && values.length > 0 ? values[values.length - 1].value : defaultValue;
   };
 
@@ -149,21 +137,27 @@ const transformProgressiveFacebookData = (progressiveData: any): PlatformOvervie
     return !isNaN(parsedDate.getTime()) ? parsedDate.toLocaleString() : "-";
   };
 
+  const page_fans = getMetricValue("page_likes");
+  const page_follows = getMetricValue("page_follows");
+  const reach = getMetricValue("page_reach");
+  const engagement = getMetricValue("page_post_engagements");
+  const ctaClicks = getMetricValue("page_actions");
+
   return {
     platform: progressiveData.platform || "Facebook",
     pageName,
-    page_fans: getMetricValue("page_fans", "lifetime"),
-          page_follows: getMetricValue("page_follows", "day"),
-    "Reach (day)": getMetricValue("page_impressions", "day"),
-    "Reach (week)": getMetricValue("page_impressions", "week"),
-    "Reach (month)": getMetricValue("page_impressions", "days_28"),
-    "Engagement (day)": getMetricValue("page_post_engagements", "day"),
-    "Engagement (week)": getMetricValue("page_post_engagements", "week"),
-    "Engagement (month)": getMetricValue("page_post_engagements", "days_28"),
-    "CTA Clicks (day)": getMetricValue("page_total_actions", "day"),
-    "CTA Clicks (week)": getMetricValue("page_total_actions", "week"),
-    "CTA Clicks (month)": getMetricValue("page_total_actions", "days_28"),
-    engagement: getMetricValue("page_impressions", "days_28"),
+    page_fans,
+    page_follows,
+    "Reach (day)": reach,
+    "Reach (week)": reach, // Flat structure doesn't have periods, use same value
+    "Reach (month)": reach,
+    "Engagement (day)": engagement,
+    "Engagement (week)": engagement,
+    "Engagement (month)": engagement,
+    "CTA Clicks (day)": ctaClicks,
+    "CTA Clicks (week)": ctaClicks,
+    "CTA Clicks (month)": ctaClicks,
+    engagement: engagement,
     last_post_date: getRecentPostDate(),
   };
 };
@@ -179,21 +173,52 @@ const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
     return num.toLocaleString();
   };
 
+  // Helper function to extract metric value from flat structure
+  const getMetricValue = (metrics: any, metricName: string): number | null => {
+    const metricData = metrics?.[metricName];
+    if (!metricData || !metricData.values || metricData.values.length === 0) {
+      return null;
+    }
+    return metricData.values[metricData.values.length - 1].value;
+  };
+
+  // Check if using new standardized format with accountInfo and flat metrics
+  const isStandardized = linkedInData.accountInfo && linkedInData.metrics;
+  
+  let followers, impressions, engagement, clicks;
+  let pageName;
+  
+  if (isStandardized) {
+    // NEW FORMAT: Use accountInfo and flat metrics
+    pageName = linkedInData.accountInfo.name || "Company Page";
+    followers = getMetricValue(linkedInData.metrics, "page_follows");
+    impressions = getMetricValue(linkedInData.metrics, "impression_count");
+    engagement = getMetricValue(linkedInData.metrics, "engagement");
+    clicks = getMetricValue(linkedInData.metrics, "click_count");
+  } else {
+    // OLD FORMAT: Use flat structure
+    pageName = linkedInData.organizationName || "Company Page";
+    followers = linkedInData.followers;
+    impressions = linkedInData.impressionCount;
+    engagement = linkedInData.engagement;
+    clicks = linkedInData.clickCount;
+  }
+
   const result = {
     platform: "LinkedIn",
-    pageName: linkedInData.organizationName || "Company Page", // Use actual company name
-    page_fans: formatNumber(linkedInData.followers),
-    page_follows: formatNumber(linkedInData.followers),
-    "Reach (day)": formatNumber(linkedInData.impressionCount),
-    "Reach (week)": formatNumber(linkedInData.impressionCount), // LinkedIn doesn't provide weekly breakdown
-    "Reach (month)": formatNumber(linkedInData.impressionCount),
-    "Engagement (day)": formatNumber(linkedInData.engagement),
-    "Engagement (week)": formatNumber(linkedInData.engagement),
-    "Engagement (month)": formatNumber(linkedInData.engagement),
-    "CTA Clicks (day)": formatNumber(linkedInData.clickCount),
-    "CTA Clicks (week)": formatNumber(linkedInData.clickCount),
-    "CTA Clicks (month)": formatNumber(linkedInData.clickCount),
-    engagement: formatNumber(linkedInData.engagement),
+    pageName,
+    page_fans: formatNumber(followers),
+    page_follows: formatNumber(followers),
+    "Reach (day)": formatNumber(impressions),
+    "Reach (week)": formatNumber(impressions),
+    "Reach (month)": formatNumber(impressions),
+    "Engagement (day)": formatNumber(engagement),
+    "Engagement (week)": formatNumber(engagement),
+    "Engagement (month)": formatNumber(engagement),
+    "CTA Clicks (day)": formatNumber(clicks),
+    "CTA Clicks (week)": formatNumber(clicks),
+    "CTA Clicks (month)": formatNumber(clicks),
+    engagement: formatNumber(engagement),
     last_post_date: "-", // LinkedIn posts are fetched separately
   };
 
@@ -204,17 +229,43 @@ const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
 const transformProgressiveLinkedInData = (progressiveData: any): PlatformOverview | null => {
   if (!progressiveData) return null;
 
-  const { organizationName, followers, impressionCount, clickCount, engagement, loadingMetrics } = progressiveData;
+  const { 
+    organizationName, 
+    accountInfo,
+    followers, 
+    impressionCount, 
+    clickCount, 
+    engagement, 
+    metrics,
+    loadingMetrics 
+  } = progressiveData;
 
-  const pageName = organizationName || "Company Page";
+  // Use accountInfo if available (new format), otherwise fall back to organizationName (old format)
+  const pageName = accountInfo?.name ?? organizationName ?? "Company Page";
+
+  // Helper function to extract metric value from flat structure
+  const getMetricValueFromMetrics = (metricName: string): number | null => {
+    const metricData = metrics?.[metricName];
+    if (!metricData || !metricData.values || metricData.values.length === 0) {
+      return null;
+    }
+    return metricData.values[metricData.values.length - 1].value;
+  };
 
   // Helper function to get metric value with loading state
-  const getMetricValue = (metricName: string, defaultValue: any = "-") => {
+  const getMetricValue = (metricName: string, legacyField: string, defaultValue: any = "-") => {
     if (loadingMetrics?.includes(metricName)) {
       return "Loading...";
     }
     
-    switch (metricName) {
+    // Try new format first (flat metrics structure)
+    if (metrics) {
+      const value = getMetricValueFromMetrics(metricName);
+      if (value !== null) return value;
+    }
+    
+    // Fall back to old format
+    switch (legacyField) {
       case "followers":
         return followers || defaultValue;
       case "impressions":
@@ -237,18 +288,18 @@ const transformProgressiveLinkedInData = (progressiveData: any): PlatformOvervie
   return {
     platform: "LinkedIn",
     pageName,
-    page_fans: formatNumber(getMetricValue("followers")),
-    page_follows: formatNumber(getMetricValue("followers")),
-    "Reach (day)": formatNumber(getMetricValue("impressions")),
-    "Reach (week)": formatNumber(getMetricValue("impressions")), // LinkedIn doesn't provide weekly breakdown
-    "Reach (month)": formatNumber(getMetricValue("impressions")),
-    "Engagement (day)": formatNumber(getMetricValue("engagement")),
-    "Engagement (week)": formatNumber(getMetricValue("engagement")),
-    "Engagement (month)": formatNumber(getMetricValue("engagement")),
-    "CTA Clicks (day)": formatNumber(getMetricValue("clicks")),
-    "CTA Clicks (week)": formatNumber(getMetricValue("clicks")),
-    "CTA Clicks (month)": formatNumber(getMetricValue("clicks")),
-    engagement: formatNumber(getMetricValue("engagement")),
+    page_fans: formatNumber(getMetricValue("page_follows", "followers")),
+    page_follows: formatNumber(getMetricValue("page_follows", "followers")),
+    "Reach (day)": formatNumber(getMetricValue("impression_count", "impressions")),
+    "Reach (week)": formatNumber(getMetricValue("impression_count", "impressions")),
+    "Reach (month)": formatNumber(getMetricValue("impression_count", "impressions")),
+    "Engagement (day)": formatNumber(getMetricValue("engagement", "engagement")),
+    "Engagement (week)": formatNumber(getMetricValue("engagement", "engagement")),
+    "Engagement (month)": formatNumber(getMetricValue("engagement", "engagement")),
+    "CTA Clicks (day)": formatNumber(getMetricValue("click_count", "clicks")),
+    "CTA Clicks (week)": formatNumber(getMetricValue("click_count", "clicks")),
+    "CTA Clicks (month)": formatNumber(getMetricValue("click_count", "clicks")),
+    engagement: formatNumber(getMetricValue("engagement", "engagement")),
     last_post_date: "-", // LinkedIn posts are fetched separately
   };
 };

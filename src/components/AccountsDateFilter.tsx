@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Row, Col } from 'react-bootstrap';
 
-export type AccountsDateFilterType = 'lifetime' | 'today' | 'yesterday' | 'week' | 'lastWeek' | 'month' | 'lastMonth' | 'quarter' | 'lastQuarter';
+export type AccountsDateFilterType = 'lifetime' | 'today' | 'yesterday' | '7days' | '30days' | '90days';
 
 export interface AccountsDateRange {
   startDate: Date;
@@ -47,59 +47,28 @@ const AccountsDateFilter: React.FC<AccountsDateFilterProps> = ({ onDateRangeChan
           endDate: endOfYesterday
         };
       }
-      case 'week': {
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+      case '7days': {
+        const startOf7Days = new Date(startOfToday);
+        startOf7Days.setDate(startOfToday.getDate() - 7);
         return {
-          startDate: startOfWeek,
+          startDate: startOf7Days,
           endDate: endOfToday
         };
       }
-      case 'lastWeek': {
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-        const startOfLastWeek = new Date(startOfWeek);
-        startOfLastWeek.setDate(startOfWeek.getDate() - 7);
-        const endOfLastWeek = new Date(startOfWeek);
-        endOfLastWeek.setDate(startOfWeek.getDate() - 1);
-        endOfLastWeek.setHours(23, 59, 59);
+      case '30days': {
+        const startOf30Days = new Date(startOfToday);
+        startOf30Days.setDate(startOfToday.getDate() - 30);
         return {
-          startDate: startOfLastWeek,
-          endDate: endOfLastWeek
-        };
-      }
-      case 'month': {
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        return {
-          startDate: startOfMonth,
+          startDate: startOf30Days,
           endDate: endOfToday
         };
       }
-      case 'lastMonth': {
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      case '90days': {
+        const startOf90Days = new Date(startOfToday);
+        startOf90Days.setDate(startOfToday.getDate() - 90);
         return {
-          startDate: startOfLastMonth,
-          endDate: endOfLastMonth
-        };
-      }
-      case 'quarter': {
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
-        return {
-          startDate: startOfQuarter,
+          startDate: startOf90Days,
           endDate: endOfToday
-        };
-      }
-      case 'lastQuarter': {
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        const previousQuarter = currentQuarter === 0 ? 3 : currentQuarter - 1;
-        const previousQuarterYear = currentQuarter === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        const startOfLastQuarter = new Date(previousQuarterYear, previousQuarter * 3, 1);
-        const endOfLastQuarter = new Date(now.getFullYear(), currentQuarter * 3, 0, 23, 59, 59);
-        return {
-          startDate: startOfLastQuarter,
-          endDate: endOfLastQuarter
         };
       }
       default:
@@ -126,12 +95,9 @@ const AccountsDateFilter: React.FC<AccountsDateFilterProps> = ({ onDateRangeChan
       case 'lifetime': return 'Lifetime';
       case 'today': return 'Today';
       case 'yesterday': return 'Yesterday';
-      case 'week': return 'This Week';
-      case 'lastWeek': return 'Last Week';
-      case 'month': return 'This Month';
-      case 'lastMonth': return 'Last Month';
-      case 'quarter': return 'This Quarter';
-      case 'lastQuarter': return 'Last Quarter';
+      case '7days': return '7 Days Ago';
+      case '30days': return '30 Days Ago';
+      case '90days': return '90 Days Ago';
       default: return 'Lifetime';
     }
   };
@@ -152,12 +118,9 @@ const AccountsDateFilter: React.FC<AccountsDateFilterProps> = ({ onDateRangeChan
               <option value="lifetime">Lifetime</option>
               <option value="today">Today</option>
               <option value="yesterday">Yesterday</option>
-              <option value="week">This Week</option>
-              <option value="lastWeek">Last Week</option>
-              <option value="month">This Month</option>
-              <option value="lastMonth">Last Month</option>
-              <option value="quarter">This Quarter</option>
-              <option value="lastQuarter">Last Quarter</option>
+              <option value="7days">7 Days Ago</option>
+              <option value="30days">30 Days Ago</option>
+              <option value="90days">90 Days Ago</option>
             </Form.Select>
           </Form.Group>
         </Col>

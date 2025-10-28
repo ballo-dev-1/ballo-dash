@@ -2,9 +2,11 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState, AppDispatch } from "..";
+import type { InstagramStatsResponse } from "@/types/instagram";
 
 // --- Interfaces ---
-interface InstagramStats {
+// Legacy format (for backward compatibility)
+interface LegacyInstagramStats {
   userInfo: {
     username: string;
     id: string;
@@ -35,6 +37,9 @@ interface InstagramStats {
   datePreset?: string;
   [key: string]: any;
 }
+
+// Support both legacy and standardized formats
+type InstagramStats = InstagramStatsResponse | LegacyInstagramStats;
 
 interface InstagramPost {
   id: string;

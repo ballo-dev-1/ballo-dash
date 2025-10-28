@@ -59,27 +59,34 @@ export default async function handler(
 
     const data = await fetchRes.json();
     
-    // Structure the data similar to the main stats endpoint
-    const structuredData: Record<string, { values: any[]; title: string; description: string }> = {};
+    // Structure the data in FLAT format (no period nesting) - use 'day' period by default
+    let metricResult: { values: any[]; title: string; description: string } | null = null;
     
     if (data.data) {
-      data.data.forEach((metricData: any) => {
-        const { name, period, values, title, description } = metricData;
+      // Find the 'day' period data, or use 'lifetime' for cumulative metrics like page_likes
+      const isDayMetric = data.data.find((m: any) => m.period === 'day');
+      const isLifetimeMetric = data.data.find((m: any) => m.period === 'lifetime');
+      
+      const metricData = isDayMetric || isLifetimeMetric || data.data[0];
+      
+      if (metricData) {
+        const { values, title, description } = metricData;
         const formattedValues = values.map((v: any) => ({
-          value: v.value,
-          endTime: v.end_time
+          date: v.end_time
             ? new Date(v.end_time).toISOString().split("T")[0]
             : null,
+          value: v.value,
         }));
-        structuredData[period] = {
+        
+        metricResult = {
           values: formattedValues,
-          title,
-          description,
+          title: title || metric,
+          description: description || `${metric} metric`,
         };
-      });
+      }
     }
 
-    return res.status(200).json(structuredData);
+    return res.status(200).json(metricResult);
   } catch (error) {
     console.error(`Error fetching metric ${metric}:`, error);
     res.status(500).json({ error: `Failed to fetch metric ${metric}` });

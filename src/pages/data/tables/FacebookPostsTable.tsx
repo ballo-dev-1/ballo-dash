@@ -98,9 +98,6 @@ const FacebookPostsTable: React.FC<Props> = ({
   data,
   isLoading: externalLoading = false,
 }) => {
-  console.log("📘 FacebookPostsTable - Data:", data);
-  console.log("📘 FacebookPostsTable - External Loading:", externalLoading);
-
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
   const transformedData = Array.isArray(data?.posts)

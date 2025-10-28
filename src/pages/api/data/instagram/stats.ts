@@ -5,7 +5,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { getInstagramAccessToken, getInstagramAccountId, storeInstagramAccountId, getStoredInstagramAccountId } from "@/lib/instagram";
 import { socialMediaCacheService } from "@/services/socialMediaCacheService";
-import DataTransformationService from "@/services/dataTransformationService";
+import { InstagramStatsResponseSchema, INSTAGRAM_METRICS } from "@/types/instagram";
+import { createAccountInfo, createDateRange, createCacheMetadata, wrapMetric, createEmptyDateRange } from "@/lib/stats-utils";
 
 export default async function handler(
   req: NextApiRequest,
@@ -106,57 +107,122 @@ export default async function handler(
     //   followers_count: profileData.followers_count
     // });
 
-    // Prepare raw data for transformation
-    const rawData = {
-      userInfo: {
-        username: profileData.username || accountId, // Use real username from API, fallback to account ID
-        id: accountId,
-        platform: "instagram",
-        biography: profileData.biography || "",
-        followers_count: profileData.followers_count || 0
-      },
-      metrics: {
-        followers: profileData.followers_count || reachData.data?.find((m: any) => m.name === "follower_count")?.values?.[0]?.value || 0,
-        reach: reachData.data?.find((m: any) => m.name === "reach")?.values?.[0]?.value || 0,
-        threadsViews: reachData.data?.find((m: any) => m.name === "threads_views")?.values?.[0]?.value || 0,
-        websiteClicks: engagementData.data?.find((m: any) => m.name === "website_clicks")?.values?.[0]?.value || 0,
-        profileViews: engagementData.data?.find((m: any) => m.name === "profile_views")?.values?.[0]?.value || 0,
-        accountsEngaged: engagementData.data?.find((m: any) => m.name === "accounts_engaged")?.values?.[0]?.value || 0,
-        totalInteractions: engagementData.data?.find((m: any) => m.name === "total_interactions")?.values?.[0]?.value || 0,
-        likes: engagementData.data?.find((m: any) => m.name === "likes")?.values?.[0]?.value || 0,
-        comments: engagementData.data?.find((m: any) => m.name === "comments")?.values?.[0]?.value || 0,
-        shares: engagementData.data?.find((m: any) => m.name === "shares")?.values?.[0]?.value || 0,
-        saves: engagementData.data?.find((m: any) => m.name === "saves")?.values?.[0]?.value || 0,
-        replies: engagementData.data?.find((m: any) => m.name === "replies")?.values?.[0]?.value || 0,
-        followsAndUnfollows: engagementData.data?.find((m: any) => m.name === "follows_and_unfollows")?.values?.[0]?.value || 0,
-        profileLinksTaps: engagementData.data?.find((m: any) => m.name === "profile_links_taps")?.values?.[0]?.value || 0,
-        views: engagementData.data?.find((m: any) => m.name === "views")?.values?.[0]?.value || 0,
-        contentViews: engagementData.data?.find((m: any) => m.name === "content_views")?.values?.[0]?.value || 0
-      },
-      recentPost: recentPostData.data ? { data: recentPostData.data } : null,
-      since: '', // Instagram API doesn't support custom date ranges for these metrics
-      until: '',
-      datePreset: 'last_30_days'
+    // Build standardized metrics structure (no period nesting)
+    const standardizedMetrics: Record<string, any> = {
+      followers: wrapMetric(
+        profileData.followers_count || reachData.data?.find((m: any) => m.name === "follower_count")?.values?.[0]?.value || 0,
+        'followers'
+      ),
+      reach: wrapMetric(
+        reachData.data?.find((m: any) => m.name === "reach")?.values?.[0]?.value || 0,
+        'reach'
+      ),
+      threads_views: wrapMetric(
+        reachData.data?.find((m: any) => m.name === "threads_views")?.values?.[0]?.value || 0,
+        'threads_views'
+      ),
+      website_clicks: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "website_clicks")?.values?.[0]?.value || 0,
+        'website_clicks'
+      ),
+      profile_views: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "profile_views")?.values?.[0]?.value || 0,
+        'profile_views'
+      ),
+      accounts_engaged: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "accounts_engaged")?.values?.[0]?.value || 0,
+        'accounts_engaged'
+      ),
+      total_interactions: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "total_interactions")?.values?.[0]?.value || 0,
+        'total_interactions'
+      ),
+      likes: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "likes")?.values?.[0]?.value || 0,
+        'likes'
+      ),
+      comments: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "comments")?.values?.[0]?.value || 0,
+        'comments'
+      ),
+      shares: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "shares")?.values?.[0]?.value || 0,
+        'shares'
+      ),
+      saves: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "saves")?.values?.[0]?.value || 0,
+        'saves'
+      ),
+      replies: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "replies")?.values?.[0]?.value || 0,
+        'replies'
+      ),
+      follows_and_unfollows: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "follows_and_unfollows")?.values?.[0]?.value || 0,
+        'follows_and_unfollows'
+      ),
+      profile_links_taps: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "profile_links_taps")?.values?.[0]?.value || 0,
+        'profile_links_taps'
+      ),
+      views: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "views")?.values?.[0]?.value || 0,
+        'views'
+      ),
+      content_views: wrapMetric(
+        engagementData.data?.find((m: any) => m.name === "content_views")?.values?.[0]?.value || 0,
+        'content_views'
+      ),
     };
 
-    // Use DataTransformationService to transform the data
-    const transformedData = DataTransformationService.getInstance().transformInstagramData(rawData);
-    
-    if (!transformedData) {
-      // console.log("❌ Failed to transform Instagram data using DataTransformationService");
-      return res.status(500).json({ error: "Failed to transform Instagram data" });
+    // Build standardized response
+    const transformedData = {
+      platform: "instagram",
+      accountInfo: createAccountInfo({
+        id: accountId,
+        name: profileData.username || accountId,
+        profilePicture: null,
+        biography: profileData.biography || null,
+        creationDate: null,
+        verified: null,
+      }),
+      metrics: standardizedMetrics,
+      dateRange: createEmptyDateRange(Array.from(INSTAGRAM_METRICS)),
+      recentPost: recentPostData.data ? { data: recentPostData.data } : null,
+      rawPageStats: null,
+      cache: createCacheMetadata({
+        cached: false,
+        fetchStatus: 'SUCCESS',
+        lastFetchedAt: new Date().toISOString(),
+      }),
+    };
+
+    // Validate with Zod schema
+    try {
+      const validated = InstagramStatsResponseSchema.parse(transformedData);
+      
+      // Store validated data in cache
+      await socialMediaCacheService.storeData(
+        companyId,
+        platform,
+        identifier,
+        validated,
+        "SUCCESS"
+      );
+
+      return res.json(validated);
+    } catch (validationError) {
+      console.error("[Instagram Stats] Response validation failed:", validationError);
+      // Store and return data anyway but log the validation error
+      await socialMediaCacheService.storeData(
+        companyId,
+        platform,
+        identifier,
+        transformedData,
+        "SUCCESS"
+      );
+      return res.json(transformedData);
     }
-
-    // Store in cache
-    socialMediaCacheService.storeData(
-      companyId,
-      platform,
-      identifier,
-      transformedData,
-      "SUCCESS"
-    );
-
-    return res.json(transformedData);
 
   } catch (error: any) {
     // Try to return cached data on error
@@ -172,13 +238,16 @@ export default async function handler(
         );
         
         if (cachedData) {
-          return res.json({
+          const responseWithCache = {
             ...cachedData.data,
-            _cached: true,
-            _fetchStatus: 'ERROR',
-            _lastFetchedAt: cachedData.lastFetchedAt,
-            _message: `Showing cached data due to error: ${error.message}`
-          });
+            cache: {
+              cached: true,
+              fetchStatus: 'ERROR' as const,
+              lastFetchedAt: cachedData.lastFetchedAt,
+              message: `Showing cached data due to error: ${error.message}`,
+            },
+          };
+          return res.json(responseWithCache);
         }
       }
     } catch (cacheError) {

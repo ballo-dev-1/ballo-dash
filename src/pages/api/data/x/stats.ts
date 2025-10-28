@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { getXAccessToken } from "@/lib/x";
 import { socialMediaCacheService } from "@/services/socialMediaCacheService";
+import { XStatsResponseSchema, X_METRICS } from "@/types/x";
+import { createAccountInfo, createDateRange, createCacheMetadata, wrapMetric, createEmptyDateRange } from "@/lib/stats-utils";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -99,10 +101,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
             const responseWithCache = {
               ...cachedData401.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedData401.lastFetchedAt,
-              _message: 'Showing cached data due to X API authorization failure'
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedData401.lastFetchedAt,
+                message: 'Showing cached data due to X API authorization failure',
+              },
             };
             return res.status(200).json(responseWithCache);
           } else {
@@ -129,10 +133,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
             const responseWithCache = {
               ...cachedData403.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedData403.lastFetchedAt,
-              _message: 'Showing cached data due to X API permission restrictions'
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedData403.lastFetchedAt,
+                message: 'Showing cached data due to X API permission restrictions',
+              },
             };
             return res.status(200).json(responseWithCache);
           } else {
@@ -159,10 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
             const responseWithCache = {
               ...cachedData404.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedData404.lastFetchedAt,
-              _message: 'Showing cached data due to X user not found (may be private)'
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedData404.lastFetchedAt,
+                message: 'Showing cached data due to X user not found (may be private)',
+              },
             };
             return res.status(200).json(responseWithCache);
           } else {
@@ -190,10 +198,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Add cache metadata to response
             const responseWithCache = {
               ...cachedData.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedData.lastFetchedAt,
-              _message: 'Showing cached data due to X API rate limiting'
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedData.lastFetchedAt,
+                message: 'Showing cached data due to X API rate limiting',
+              },
             };
             return res.status(200).json(responseWithCache);
           } else {
@@ -221,10 +231,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
             const responseWithCache = {
               ...cachedDataDefault.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedDataDefault.lastFetchedAt,
-              _message: "Showing cached data due to X API error (" + xApiResponse.status + ")"
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedDataDefault.lastFetchedAt,
+                message: "Showing cached data due to X API error (" + xApiResponse.status + ")",
+              },
             };
             return res.status(200).json(responseWithCache);
           } else {
@@ -246,44 +258,91 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     
-    // Transform the response to match our expected format
+    // Build standardized metrics structure (no period nesting)
+    const standardizedMetrics: Record<string, any> = {
+      followers: wrapMetric(
+        data.data.public_metrics?.followers_count || 0,
+        'followers'
+      ),
+      following: wrapMetric(
+        data.data.public_metrics?.following_count || 0,
+        'following'
+      ),
+      tweet_count: wrapMetric(
+        data.data.public_metrics?.tweet_count || 0,
+        'tweet_count'
+      ),
+      listed_count: wrapMetric(
+        data.data.public_metrics?.listed_count || 0,
+        'listed_count'
+      ),
+      like_count: wrapMetric(
+        data.data.public_metrics?.like_count || 0,
+        'like_count'
+      ),
+      media_count: wrapMetric(
+        data.data.public_metrics?.media_count || 0,
+        'media_count'
+      ),
+    };
+
+    // Transform the response to standardized format
     const result = {
-      platform: platform || 'x',
-      userInfo: {
-        username: data.data.username,
+      platform: 'x',
+      accountInfo: createAccountInfo({
         id: data.data.id,
         name: data.data.name,
-        description: data.data.description || "",
-        profileImageUrl: data.data.profile_image_url || "",
-        verified: data.data.verified || false,
-      },
-      metrics: {
-        followers: data.data.public_metrics?.followers_count || 0,
-        following: data.data.public_metrics?.following_count || 0,
-        tweetCount: data.data.public_metrics?.tweet_count || 0,
-        listedCount: data.data.public_metrics?.listed_count || 0,
-        likeCount: data.data.public_metrics?.like_count || 0,
-        mediaCount: data.data.public_metrics?.media_count || 0,
-      },
-      since: since || "",
-      until: until || "",
-      datePreset: date_preset || ""
+        profilePicture: data.data.profile_image_url || null,
+        biography: data.data.description || null,
+        creationDate: null,
+        verified: data.data.verified || null,
+      }),
+      metrics: standardizedMetrics,
+      dateRange: createEmptyDateRange(Array.from(X_METRICS)),
+      recentPost: null,
+      rawPageStats: null,
+      cache: createCacheMetadata({
+        cached: false,
+        fetchStatus: 'SUCCESS',
+        lastFetchedAt: new Date().toISOString(),
+      }),
     };
     
-    // Store successful result in cache
+    // Validate with Zod schema
     try {
-      await socialMediaCacheService.storeData(
-        session.user.companyId,
-        'X',
-        cleanUsername,
-        result,
-        'SUCCESS'
-      );
-    } catch (cacheError) {
-      // Don't fail the request if caching fails
+      const validated = XStatsResponseSchema.parse(result);
+      
+      // Store validated result in cache
+      try {
+        await socialMediaCacheService.storeData(
+          session.user.companyId,
+          'X',
+          cleanUsername,
+          validated,
+          'SUCCESS'
+        );
+      } catch (cacheError) {
+        console.error("[X Stats] Cache error:", cacheError);
+        // Don't fail the request if caching fails
+      }
+      
+      return res.status(200).json(validated);
+    } catch (validationError) {
+      console.error("[X Stats] Response validation failed:", validationError);
+      // Store and return data anyway but log the validation error
+      try {
+        await socialMediaCacheService.storeData(
+          session.user.companyId,
+          'X',
+          cleanUsername,
+          result,
+          'SUCCESS'
+        );
+      } catch (cacheError) {
+        // Ignore cache errors
+      }
+      return res.status(200).json(result);
     }
-    
-    return res.status(200).json(result);
 
   } catch (error: any) {
     // If there's an internal error, try to return cached data instead
@@ -311,10 +370,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
             const responseWithCache = {
               ...cachedData.data,
-              _cached: true,
-              _fetchStatus: 'SUCCESS',
-              _lastFetchedAt: cachedData.lastFetchedAt,
-              _message: 'Showing cached data due to internal server error'
+              cache: {
+                cached: true,
+                fetchStatus: 'SUCCESS' as const,
+                lastFetchedAt: cachedData.lastFetchedAt,
+                message: 'Showing cached data due to internal server error',
+              },
             };
             return res.status(200).json(responseWithCache);
           }

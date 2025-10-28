@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import TableContainer from "@common/TableContainer";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Image from "next/image";
 import AccountsDateFilter, { AccountsDateRange } from "@/components/AccountsDateFilter";
 import facebookIcon from "@/assets/images/socials/facebook.png";
@@ -13,21 +13,24 @@ import {
   selectProgressiveFacebookStats,
   selectProgressiveFacebookStatus,
   selectProgressiveFacebookError,
-  selectFacebookStats
+  selectFacebookStats,
+  fetchFacebookStatsProgressive,
+  resetProgressiveFacebookStats
 } from "@/toolkit/facebookData/reducer";
 import { 
-  selectProgressiveLinkedInStats
+  selectProgressiveLinkedInStats,
+  selectLinkedInPosts,
+  fetchLinkedInStatsProgressive,
+  resetProgressiveLinkedInStats
 } from "@/toolkit/linkedInData/reducer";
 import { 
   selectInstagramStats
 } from "@/toolkit/instagramData/reducer";
 import { 
   selectProgressiveXStats,
-  selectXPosts
+  selectXPosts,
+  fetchXStats
 } from "@/toolkit/xData/reducer";
-import { 
-  selectLinkedInPosts
-} from "@/toolkit/linkedInData/reducer";
 import DataTransformationService, { PlatformOverview } from "@/services/dataTransformationService";
 
 interface OverviewAccountsProps {
@@ -40,11 +43,17 @@ interface OverviewAccountsProps {
 }
 
 const transformFacebookData = (facebook: any): PlatformOverview | null => {
-  return DataTransformationService.getInstance().transformFacebookData(facebook);
+  console.log("🔄 transformFacebookData called with:", facebook);
+  const result = DataTransformationService.getInstance().transformFacebookData(facebook);
+  console.log("✅ transformFacebookData result:", result);
+  return result;
 };
 
 const transformProgressiveFacebookData = (progressiveData: any): PlatformOverview | null => {
-  return DataTransformationService.getInstance().transformProgressiveFacebookData(progressiveData);
+  console.log("🔄 transformProgressiveFacebookData called with:", progressiveData);
+  const result = DataTransformationService.getInstance().transformProgressiveFacebookData(progressiveData);
+  console.log("✅ transformProgressiveFacebookData result:", result);
+  return result;
 };
 
 const transformLinkedInData = (linkedInData: any): PlatformOverview | null => {
@@ -104,11 +113,13 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   isExpanded,
   onToggleExpand,
 }) => {
-
+  const dispatch = useDispatch();
+  
   // Date range state
   const [dateRange, setDateRange] = useState<AccountsDateRange | undefined>(undefined);
+  const previousDateRangeRef = useRef<AccountsDateRange | undefined>(undefined);
 
-  // Get progressive data from Redux
+  // Get data from Redux
   const progressiveData = useSelector(selectProgressiveFacebookStats);
   const progressiveStatus = useSelector(selectProgressiveFacebookStatus);
   const progressiveError = useSelector(selectProgressiveFacebookError);
@@ -122,12 +133,111 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const linkedinPosts = useSelector(selectLinkedInPosts);
   const xPosts = useSelector(selectXPosts);
 
+  // Extract integration IDs
+  const facebookIntegrationId = facebook?.pageInfo?.id || facebook?.pageId;
+  const linkedInIntegrationId = linkedInData?.organizationId || linkedInData?.organization_id;
+  const xIntegrationId = xData?.username || xData?.userInfo?.username;
 
+  // Fetch new data when date range changes
+  useEffect(() => {
+    // Only proceed if dateRange exists and is different from the previous one
+    if (dateRange && 
+        (!previousDateRangeRef.current || 
+         previousDateRangeRef.current.startDate.getTime() !== dateRange.startDate.getTime() ||
+         previousDateRangeRef.current.endDate.getTime() !== dateRange.endDate.getTime())) {
+      
+      // Update the ref to track the current date range
+      previousDateRangeRef.current = dateRange;
+      
+      // Convert date range to API parameters
+      const since = dateRange.startDate.toISOString().split('T')[0];
+      const until = dateRange.endDate.toISOString().split('T')[0];
+      
+      // Calculate difference in days to determine datePreset
+      const diffTime = dateRange.endDate.getTime() - dateRange.startDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Determine datePreset based on Facebook's official date_preset values
+      // Reference: https://developers.facebook.com/docs/graph-api/reference/v23.0/insights
+      const getDatePreset = (): string => {
+        const today = new Date();
+        const isToday = dateRange.startDate.toDateString() === today.toDateString();
+        
+        // Check if it's a single day (today or yesterday)
+        if (diffDays === 0 || diffDays === 1) {
+          if (isToday) return 'today';
+          
+          // Check if it's yesterday
+          const yesterday = new Date(today);
+          yesterday.setDate(today.getDate() - 1);
+          if (dateRange.startDate.toDateString() === yesterday.toDateString()) {
+            return 'yesterday';
+          }
+        }
+        
+        // Map to Facebook's official date presets
+        if (diffDays <= 3) return 'last_3d';
+        if (diffDays <= 7) return 'last_7d';
+        if (diffDays <= 14) return 'last_14d';
+        if (diffDays <= 28) return 'last_28d';
+        if (diffDays <= 30) return 'last_30d';
+        if (diffDays <= 90) return 'last_90d';
+        
+        // For longer ranges, use maximum (2 years of data)
+        return 'maximum';
+      };
+      
+      const datePreset = getDatePreset();
+      
+      // Fetch Facebook data with new date range
+      if (facebookIntegrationId) {
+        dispatch(resetProgressiveFacebookStats() as any);
+        dispatch(fetchFacebookStatsProgressive({
+          pageId: facebookIntegrationId,
+          platform: 'facebook',
+          since,
+          until,
+          datePreset
+        }) as any);
+      }
+      
+      // Fetch LinkedIn data with new date range
+      if (linkedInIntegrationId) {
+        dispatch(resetProgressiveLinkedInStats() as any);
+        dispatch(fetchLinkedInStatsProgressive({
+          organizationId: linkedInIntegrationId,
+          platform: 'linkedin',
+          since,
+          until,
+          datePreset
+        }) as any);
+      }
+      
+      // Fetch X data with new date range
+      if (xIntegrationId) {
+        dispatch(fetchXStats({
+          username: xIntegrationId,
+          platform: 'x',
+          since,
+          until,
+          datePreset
+        }) as any);
+      }
+    }
+  }, [dateRange, dispatch, facebookIntegrationId, linkedInIntegrationId, xIntegrationId]);
 
-  const [reachHeader, setReachHeader] = useState("Reach (week)");
-  const [engagementHeader, setEngagementHeader] =
-    useState("Engagement (month)");
-  const [CTAClicksHeader, setCTAClicksHeader] = useState("CTA Clicks (month)");
+  // Debug logging for Facebook data
+  useEffect(() => {
+    console.log("=== Facebook Data Debug ===");
+    console.log("📘 Progressive Facebook Data:", progressiveData);
+    console.log("📘 Progressive Status:", progressiveStatus);
+    console.log("📘 Progressive Error:", progressiveError);
+    console.log("📘 Facebook Stats from Redux:", facebookStats);
+    console.log("📘 Facebook Prop:", facebook);
+    console.log("📘 Facebook Integration ID:", facebookIntegrationId);
+    console.log("=== End Facebook Data Debug ===");
+  }, [progressiveData, progressiveStatus, progressiveError, facebookStats, facebook, facebookIntegrationId]);
+
   const facebookData: PlatformOverview[] = [];
   const linkedinDataArray: PlatformOverview[] = [];
 
@@ -136,16 +246,19 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     ? transformProgressiveFacebookData(progressiveData)
     : transformFacebookData(facebookStats || facebook);
     
-  // Debug logging
-  console.log("🔍 Facebook Data Debug in OverviewAccounts:");
-  console.log("  - progressiveData:", progressiveData);
-  console.log("  - facebookStats:", facebookStats);
-  console.log("  - facebook prop:", facebook);
-  console.log("  - transformed:", transformed);
-  console.log("  - facebookData array:", facebookData);
+  // Log Facebook data transformation details
+  console.log("🔍 Facebook Data Transformation:");
+  console.log("  - Using progressive data:", !!progressiveData);
+  console.log("  - Progressive data structure:", progressiveData);
+  console.log("  - Facebook prop structure:", facebook);
+  console.log("  - Facebook stats from Redux:", facebookStats);
+  console.log("  - Transformed result:", transformed);
     
   if (transformed) {
     facebookData.push(transformed);
+    console.log("✅ Facebook data added to array:", facebookData);
+  } else {
+    console.log("❌ No Facebook data to display");
   }
 
   // Use progressive LinkedIn data if available, otherwise fall back to regular LinkedIn data
@@ -168,10 +281,6 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const instagramDataArray: PlatformOverview[] = [];
   if (transformedInstagram) {
     instagramDataArray.push(transformedInstagram);
-  } else if (instagramStats || instagramDataProp) {
-    console.log("📸 Instagram Data available but transformation failed:", instagramStats || instagramDataProp);
-  } else {
-    console.log("📸 No Instagram Data available");
   }
   
   // Transform X data
@@ -187,10 +296,6 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
       last_post_date: lastPostDate
     };
     xDataArray.push(xWithLastPost);
-  } else if (progressiveXData || xData) {
-    console.log("🐦 X Data available but transformation failed:", progressiveXData || xData);
-  } else {
-    console.log("🐦 No X Data available");
   }
   
   const tiktokData: { tiktokData: any }[] = [];
@@ -198,6 +303,8 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   const youtubeData: { youtubeData: any }[] = [];
   const whatsappData: { whatsappData: any }[] = [];
 
+  // Combine all platform data
+  // Date filter fetches new data from API for each platform with the selected date range
   const data = [
     ...facebookData,
     ...linkedinDataArray,
@@ -275,22 +382,22 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
     {
       header: "Likes",
       enableColumnFilter: false,
-      accessorKey: "page_fans",
+      accessorKey: "page_fans", // Legacy name, still used in PlatformOverview
     },
     {
-      header: reachHeader,
+      header: "Reach",
       enableColumnFilter: false,
-      accessorKey: reachHeader,
+      accessorKey: "Reach (month)",
     },
     {
-      header: engagementHeader,
+      header: "Engagement",
       enableColumnFilter: false,
-      accessorKey: engagementHeader,
+      accessorKey: "Engagement (month)",
     },
     {
-      header: CTAClicksHeader,
+      header: "CTA Clicks",
       enableColumnFilter: false,
-      accessorKey: CTAClicksHeader,
+      accessorKey: "CTA Clicks (month)",
     },
     {
       header: "Last Post Date",
