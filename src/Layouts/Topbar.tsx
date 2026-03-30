@@ -661,11 +661,11 @@ const TopBar = ({
                               <span>Edit profile</span>
                             </span>
                           </Dropdown.Item>
-                          <Dropdown.Item>
+                          <Dropdown.Item className="p-0">
                             <Button
                               variant="none"
                               onClick={() => openIntegrationModal('view')}
-                              className="d-flex align-items-center p-0"
+                              className="d-flex align-items-center p-[10px 15px]"
                               id="manage-integrations-button"
                             >
                               <Cable size={32} />

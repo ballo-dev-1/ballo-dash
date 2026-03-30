@@ -227,14 +227,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     };
 
-    // Test and log the final response
-    console.log("[Facebook Stats] Final standardized response:");
-    console.log("  - accountInfo.id:", responseData.accountInfo.id);
-    console.log("  - accountInfo.name:", responseData.accountInfo.name);
-    console.log("  - accountInfo.creationDate:", responseData.accountInfo.creationDate);
-    console.log("  - Date format valid:", responseData.accountInfo.creationDate ? /^\d{4}-\d{2}-\d{2}$/.test(responseData.accountInfo.creationDate) : "null");
-    console.log("  - Can be parsed as Date:", responseData.accountInfo.creationDate ? !isNaN(new Date(responseData.accountInfo.creationDate).getTime()) : "null");
-
     // Validate response with Zod
     try {
       const validated = FacebookStatsResponseSchema.parse(responseData);

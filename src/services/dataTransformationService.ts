@@ -459,9 +459,14 @@ class DataTransformationService {
    * Transform progressive LinkedIn data to PlatformOverview format
    */
   public transformProgressiveLinkedInData(progressiveLinkedInData: ProgressiveLinkedInData | any): PlatformOverview | null {
-    if (!progressiveLinkedInData) return null;
+    console.log("🔄 [Transform] transformProgressiveLinkedInData called with:", progressiveLinkedInData);
+    
+    if (!progressiveLinkedInData) {
+      console.log("❌ [Transform] No LinkedIn data provided");
+      return null;
+    }
 
-    // Helper function to extract metric value from flat structure
+    // Helper function to extract metric value from standardized structure
     const getMetricValueFromMetrics = (metricName: string): number | null => {
       const metricData = progressiveLinkedInData.metrics?.[metricName];
       if (!metricData || !metricData.values || metricData.values.length === 0) {
@@ -470,28 +475,52 @@ class DataTransformationService {
       return metricData.values[metricData.values.length - 1].value;
     };
 
-    // Check if using new standardized format
-    const hasNewFormat = progressiveLinkedInData.accountInfo || progressiveLinkedInData.metrics;
+    // Check if using new standardized format (has accountInfo and metrics with values arrays)
+    const hasStandardizedFormat = progressiveLinkedInData.accountInfo && 
+                                   progressiveLinkedInData.metrics &&
+                                   typeof progressiveLinkedInData.metrics === 'object';
+    
+    console.log("📊 [Transform] Format detected:", hasStandardizedFormat ? "STANDARDIZED" : "LEGACY");
     
     let pageName, followers, impressions, engagement, clicks;
     
-    if (hasNewFormat) {
-      // NEW FORMAT: Use accountInfo and flat metrics
+    if (hasStandardizedFormat) {
+      // NEW STANDARDIZED FORMAT: Use accountInfo and metrics with values arrays
+      console.log("✨ [Transform] Using standardized format transformation");
       pageName = progressiveLinkedInData.accountInfo?.name ?? progressiveLinkedInData.organizationName ?? "LinkedIn Company";
+      
+      // Try to extract from standardized metrics first, then fall back to flat properties
       followers = getMetricValueFromMetrics("page_follows") ?? progressiveLinkedInData.followers;
       impressions = getMetricValueFromMetrics("impression_count") ?? progressiveLinkedInData.impressionCount;
       engagement = getMetricValueFromMetrics("engagement") ?? progressiveLinkedInData.engagement;
       clicks = getMetricValueFromMetrics("click_count") ?? progressiveLinkedInData.clickCount;
+      
+      console.log("📈 [Transform] Extracted values:", {
+        pageName,
+        followers,
+        impressions,
+        engagement,
+        clicks
+      });
     } else {
-      // OLD FORMAT: Use flat structure
+      // OLD LEGACY FORMAT: Use flat structure
+      console.log("🔙 [Transform] Using legacy format transformation");
       pageName = progressiveLinkedInData.organizationName || "LinkedIn Company";
       followers = progressiveLinkedInData.followers;
       impressions = progressiveLinkedInData.impressionCount;
       engagement = progressiveLinkedInData.engagement;
       clicks = progressiveLinkedInData.clickCount;
+      
+      console.log("📈 [Transform] Legacy values:", {
+        pageName,
+        followers,
+        impressions,
+        engagement,
+        clicks
+      });
     }
 
-    return {
+    const result = {
       platform: "LinkedIn",
       pageName,
       page_fans: followers || "-",
@@ -508,6 +537,9 @@ class DataTransformationService {
       engagement: engagement || "-",
       last_post_date: "-", // LinkedIn posts are fetched separately
     };
+    
+    console.log("✅ [Transform] Final PlatformOverview:", result);
+    return result;
   }
 
   /**

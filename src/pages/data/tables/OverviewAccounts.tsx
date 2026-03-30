@@ -262,9 +262,18 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
   }
 
   // Use progressive LinkedIn data if available, otherwise fall back to regular LinkedIn data
+  console.log("🔍 [OverviewAccounts] LinkedIn data sources:", {
+    progressiveLinkedInData,
+    linkedInData,
+    hasProgressive: !!progressiveLinkedInData,
+    hasLegacy: !!linkedInData
+  });
+  
   const transformedLinkedIn = progressiveLinkedInData 
     ? transformProgressiveLinkedInData(progressiveLinkedInData)
     : transformLinkedInData(linkedInData);
+  
+  console.log("🔍 [OverviewAccounts] LinkedIn transformation result:", transformedLinkedIn);
     
   if (transformedLinkedIn) {
     // Add last post date from LinkedIn posts
@@ -273,7 +282,10 @@ const OverviewAccounts: React.FC<OverviewAccountsProps> = ({
       ...transformedLinkedIn,
       last_post_date: lastPostDate
     };
+    console.log("✅ [OverviewAccounts] Adding LinkedIn to table data:", linkedinWithLastPost);
     linkedinDataArray.push(linkedinWithLastPost);
+  } else {
+    console.log("⚠️ [OverviewAccounts] No LinkedIn data to display");
   }
 
   // Transform Instagram data
